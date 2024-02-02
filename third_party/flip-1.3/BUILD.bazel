@@ -1,3 +1,8 @@
+"""
+    SPDX-FileCopyrightText: Copyright 2024 Julian Amann <dev@vertexwahn.de>
+    SPDX-License-Identifier: BSD-3-Clause
+"""
+
 cc_library(
     name = "flip",
     hdrs = ["cpp/FLIP.h"],
