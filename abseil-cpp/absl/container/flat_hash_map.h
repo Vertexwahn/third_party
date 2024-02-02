@@ -573,9 +573,10 @@ struct FlatHashMapPolicy {
     slot_policy::construct(alloc, slot, std::forward<Args>(args)...);
   }
 
+  // Returns std::true_type in case destroy is trivial.
   template <class Allocator>
-  static void destroy(Allocator* alloc, slot_type* slot) {
-    slot_policy::destroy(alloc, slot);
+  static auto destroy(Allocator* alloc, slot_type* slot) {
+    return slot_policy::destroy(alloc, slot);
   }
 
   template <class Allocator>
@@ -590,6 +591,13 @@ struct FlatHashMapPolicy {
   apply(F&& f, Args&&... args) {
     return absl::container_internal::DecomposePair(std::forward<F>(f),
                                                    std::forward<Args>(args)...);
+  }
+
+  template <class Hash>
+  static constexpr HashSlotFn get_hash_slot_fn() {
+    return memory_internal::IsLayoutCompatible<K, V>::value
+               ? &TypeErasedApplyToSlotFn<Hash, K>
+               : nullptr;
   }
 
   static size_t space_used(const slot_type*) { return 0; }

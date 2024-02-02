@@ -27,6 +27,23 @@ local_path_override(
 
 To see this in action have look at [Vertexwahn/FlatlandRT](https://github.com/Vertexwahn/FlatlandRT)
 
+### Further ideas
+
+Deleting all `MODULE.bazel` files and shifting their contents to one "centralized" `MODULE.bazel` file should enable you to use third-party dependencies simply by:
+
+```shell
+...(
+    ...
+    deps = [//third_party/abseil-cpp/absl/algorithm:container]
+    ...    
+)
+```
+
+This approach needs of course some more rework. 
+For example, in abseil-cpp you have to change the dependency to `@googletest//:some_target` to something like `//third_party/googletest:some_target`.
+Maybe [Copybara](https://github.com/google/copybara) can automate all needed transformations.
+This repo stick to the polyrepo approach where each library is consider as its own Bazel module.
+Neverthless, it would be interesesting to work in a monorepo with one `MODULE.bazel` file (or no module file since modules are then not needed anymore).
 
 ## References
 

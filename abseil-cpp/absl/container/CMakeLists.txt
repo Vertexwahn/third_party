@@ -213,6 +213,7 @@ absl_cc_library(
   DEPS
     absl::config
     GTest::gmock
+  TESTONLY
 )
 
 absl_cc_test(
@@ -306,6 +307,7 @@ absl_cc_test(
     absl::check
     absl::flat_hash_map
     absl::hash_generator_testing
+    absl::test_allocator
     absl::type_traits
     absl::unordered_map_constructor_test
     absl::unordered_map_lookup_test
@@ -347,6 +349,7 @@ absl_cc_test(
     absl::hash_generator_testing
     absl::memory
     absl::strings
+    absl::test_allocator
     absl::unordered_set_constructor_test
     absl::unordered_set_lookup_test
     absl::unordered_set_members_test
@@ -398,6 +401,7 @@ absl_cc_library(
   COPTS
     ${ABSL_DEFAULT_COPTS}
   DEPS
+    absl::container_memory
     absl::core_headers
     absl::hash_function_defaults
     absl::node_slot_policy
@@ -557,6 +561,7 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::container_memory
     absl::hash_policy_traits
     GTest::gmock_main
 )
@@ -773,6 +778,7 @@ absl_cc_test(
     ${ABSL_TEST_COPTS}
   DEPS
     absl::config
+    absl::container_memory
     absl::raw_hash_set
     absl::tracked
     GTest::gmock_main
