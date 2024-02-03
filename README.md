@@ -9,10 +9,10 @@ If appreciated those bazelizations can be provided to the upstream dependencies.
 
 ### How to use with your Bazel build?
 
-You can put the contents of this repository in folder named `third_party` inside your workspace/repo.
+You can put the contents of this repository in a folder named `third_party` inside your workspace/repo.
 Add to your `.bazelignore` the folder `third_party`, since this folder contains many `WORKSPACE` and 
 `MODULE.bazel` files.
-In your `MODULE.bazel` you can use `local_path_override` to reference on of the listed dependencies here.
+In your `MODULE.bazel` you can use `local_path_override` to reference one of the listed dependencies here.
 
 Example:
 
@@ -25,7 +25,7 @@ local_path_override(
 )
 ```
 
-To see this in action have look at [Vertexwahn/FlatlandRT](https://github.com/Vertexwahn/FlatlandRT)
+To see this in action have a look at [Vertexwahn/FlatlandRT](https://github.com/Vertexwahn/FlatlandRT)
 
 ### Further ideas
 
@@ -42,8 +42,8 @@ Deleting all `MODULE.bazel` files and shifting their contents to one "centralize
 This approach needs of course some more rework. 
 For example, in abseil-cpp you have to change the dependency to `@googletest//:some_target` to something like `//third_party/googletest:some_target`.
 Maybe [Copybara](https://github.com/google/copybara) can automate all needed transformations.
-This repo stick to the polyrepo approach where each library is consider as its own Bazel module.
-Neverthless, it would be interesesting to work in a monorepo with one `MODULE.bazel` file (or no module file since modules are then not needed anymore).
+This repo sticks to the polyrepo approach where each library is considered as its own Bazel module.
+Nevertheless, it would be interesting to work in a monorepo with one `MODULE.bazel` file (or no module file since modules are then not needed anymore in this case).
 
 ## References
 
