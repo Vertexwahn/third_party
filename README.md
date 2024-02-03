@@ -34,7 +34,7 @@ Deleting all `MODULE.bazel` files and shifting their contents to one "centralize
 ```shell
 ...(
     ...
-    deps = [//third_party/abseil-cpp/absl/algorithm:container]
+    deps = ["//third_party/abseil-cpp/absl/algorithm:container"],
     ...    
 )
 ```
