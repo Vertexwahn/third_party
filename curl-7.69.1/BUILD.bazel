@@ -437,7 +437,7 @@ cc_library(
             "CURL_STRICTER",
         ],
     }),
-    includes = ["include"],
+    includes = ["include", "lib"],
     linkopts = select({
         ":macos": [
             "-Wl,-framework",
