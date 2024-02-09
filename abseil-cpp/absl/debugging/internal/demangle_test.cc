@@ -31,6 +31,78 @@ namespace {
 
 using ::testing::ContainsRegex;
 
+TEST(Demangle, FunctionTemplate) {
+  char tmp[100];
+
+  // template <typename T>
+  // int foo(T);
+  //
+  // foo<int>(5);
+  ASSERT_TRUE(Demangle("_Z3fooIiEiT_", tmp, sizeof(tmp)));
+  EXPECT_STREQ(tmp, "foo<>()");
+}
+
+TEST(Demangle, FunctionTemplateWithNesting) {
+  char tmp[100];
+
+  // template <typename T>
+  // int foo(T);
+  //
+  // foo<Wrapper<int>>({ .value = 5 });
+  ASSERT_TRUE(Demangle("_Z3fooI7WrapperIiEEiT_", tmp, sizeof(tmp)));
+  EXPECT_STREQ(tmp, "foo<>()");
+}
+
+TEST(Demangle, FunctionTemplateWithNonTypeParamConstraint) {
+  char tmp[100];
+
+  // template <std::integral T>
+  // int foo(T);
+  //
+  // foo<int>(5);
+  ASSERT_TRUE(Demangle("_Z3fooITkSt8integraliEiT_", tmp, sizeof(tmp)));
+  EXPECT_STREQ(tmp, "foo<>()");
+}
+
+TEST(Demangle, FunctionTemplateWithAutoParam) {
+  char tmp[100];
+
+  // template <auto>
+  // void foo();
+  //
+  // foo<1>();
+  ASSERT_TRUE(Demangle("_Z3fooITnDaLi1EEvv", tmp, sizeof(tmp)));
+  EXPECT_STREQ(tmp, "foo<>()");
+}
+
+TEST(Demangle, FunctionTemplateWithNonTypeParamPack) {
+  char tmp[100];
+
+  // template <int&..., typename T>
+  // void foo(T);
+  //
+  // foo(2);
+  ASSERT_TRUE(Demangle("_Z3fooITpTnRiJEiEvT0_", tmp, sizeof(tmp)));
+  EXPECT_STREQ(tmp, "foo<>()");
+}
+
+TEST(Demangle, FunctionTemplateTemplateParamWithConstrainedArg) {
+  char tmp[100];
+
+  // template <typename T>
+  // concept True = true;
+  //
+  // template <typename T> requires True<T>
+  // struct Fooer {};
+  //
+  // template <template <typename T> typename>
+  // void foo() {}
+  //
+  // foo<Fooer>();
+  ASSERT_TRUE(Demangle("_Z3fooITtTyE5FooerEvv", tmp, sizeof(tmp)));
+  EXPECT_STREQ(tmp, "foo<>()");
+}
+
 // Test corner cases of boundary conditions.
 TEST(Demangle, CornerCases) {
   char tmp[10];
