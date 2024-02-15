@@ -7,6 +7,7 @@ cc_library(
     name = "flip",
     hdrs = ["cpp/FLIP.h"],
     includes = ["cpp"],
+    visibility = ["//visibility:public"],
 )
 
 cc_binary(
@@ -21,5 +22,6 @@ cc_binary(
         "cpp/tool/stb_image_write.h",
         "cpp/tool/tinyexr.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [":flip"],
 )

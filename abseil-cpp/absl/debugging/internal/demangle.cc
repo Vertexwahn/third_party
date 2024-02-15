@@ -579,6 +579,7 @@ static bool ParseUnresolvedName(State *state);
 static bool ParseExpression(State *state);
 static bool ParseExprPrimary(State *state);
 static bool ParseExprCastValue(State *state);
+static bool ParseQRequiresClauseExpr(State *state);
 static bool ParseLocalName(State *state);
 static bool ParseLocalNameSuffix(State *state);
 static bool ParseDiscriminator(State *state);
@@ -623,25 +624,34 @@ static bool ParseMangledName(State *state) {
 }
 
 // <encoding> ::= <(function) name> <bare-function-type>
+//                [`Q` <requires-clause expr>]
 //            ::= <(data) name>
 //            ::= <special-name>
 //
 // NOTE: Based on http://shortn/_Hoq9qG83rx
-// TODO(b/324066279): Add support for [Q <requires-clause expression>].
 static bool ParseEncoding(State *state) {
   ComplexityGuard guard(state);
   if (guard.IsTooComplex()) return false;
-  // Implementing the first two productions together as <name>
-  // [<bare-function-type>] avoids exponential blowup of backtracking.
+  // Since the first two productions both start with <name>, attempt
+  // to parse it only once to avoid exponential blowup of backtracking.
   //
-  // Since Optional(...) can't fail, there's no need to copy the state for
-  // backtracking.
-  if (ParseName(state) && Optional(ParseBareFunctionType(state))) {
+  // We're careful about exponential blowup because <encoding> recursively
+  // appears in other productions downstream of its first two productions,
+  // which means that every call to `ParseName` would possibly indirectly
+  // result in two calls to `ParseName` etc.
+  if (ParseName(state)) {
+    if (!ParseBareFunctionType(state)) {
+      return true;  // <(data) name>
+    }
+
+    // Parsed: <(function) name> <bare-function-type>
+    // Pending: [`Q` <requires-clause expr>]
+    ParseQRequiresClauseExpr(state);  // restores state on failure
     return true;
   }
 
   if (ParseSpecialName(state)) {
-    return true;
+    return true;  // <special-name>
   }
   return false;
 }
@@ -1287,32 +1297,39 @@ static bool ParseCVQualifiers(State *state) {
 }
 
 // <builtin-type> ::= v, etc.  # single-character builtin types
-//                ::= u <source-name>
+//                ::= u <source-name> [I <type> E]
 //                ::= Dd, etc.  # two-character builtin types
 //
 // Not supported:
 //                ::= DF <number> _ # _FloatN (N bits)
 //
+// NOTE: [I <type> E] is a vendor extension (http://shortn/_FrINpH1XC5).
 static bool ParseBuiltinType(State *state) {
   ComplexityGuard guard(state);
   if (guard.IsTooComplex()) return false;
-  const AbbrevPair *p;
-  for (p = kBuiltinTypeList; p->abbrev != nullptr; ++p) {
+
+  for (const AbbrevPair *p = kBuiltinTypeList; p->abbrev != nullptr; ++p) {
     // Guaranteed only 1- or 2-character strings in kBuiltinTypeList.
     if (p->abbrev[1] == '\0') {
       if (ParseOneCharToken(state, p->abbrev[0])) {
         MaybeAppend(state, p->real_name);
-        return true;
+        return true;  // ::= v, etc.  # single-character builtin types
       }
     } else if (p->abbrev[2] == '\0' && ParseTwoCharToken(state, p->abbrev)) {
       MaybeAppend(state, p->real_name);
-      return true;
+      return true;  // ::= Dd, etc.  # two-character builtin types
     }
   }
 
   ParseState copy = state->parse_state;
   if (ParseOneCharToken(state, 'u') && ParseSourceName(state)) {
-    return true;
+    copy = state->parse_state;
+    if (ParseOneCharToken(state, 'I') && ParseType(state) &&
+        ParseOneCharToken(state, 'E')) {
+      return true;  // ::= u <source-name> I <type> E
+    }
+    state->parse_state = copy;
+    return true;  // ::= u <source-name>
   }
   state->parse_state = copy;
   return false;
@@ -1491,16 +1508,14 @@ static bool ParseTemplateTemplateParam(State *state) {
           ParseSubstitution(state, /*accept_std=*/false));
 }
 
-// <template-args> ::= I <template-arg>+ E
-//
-// TODO(b/324066279): Implement optional [Q <requires-clause expr>] before E.
-// See: http://shortn/_Z7yM7PonSD
+// <template-args> ::= I <template-arg>+ [Q <requires-clause expr>] E
 static bool ParseTemplateArgs(State *state) {
   ComplexityGuard guard(state);
   if (guard.IsTooComplex()) return false;
   ParseState copy = state->parse_state;
   DisableAppend(state);
   if (ParseOneCharToken(state, 'I') && OneOrMore(ParseTemplateArg, state) &&
+      Optional(ParseQRequiresClauseExpr(state)) &&
       ParseOneCharToken(state, 'E')) {
     RestoreAppend(state, copy.append);
     MaybeAppend(state, "<>");
@@ -1913,6 +1928,40 @@ static bool ParseExprCastValue(State *state) {
   }
   state->parse_state = copy;
 
+  return false;
+}
+
+// Parses `Q <requires-clause expr>`.
+// If parsing fails, applies backtracking to `state`.
+//
+// This function covers two symbols instead of one for convenience,
+// because in LLVM's Itanium ABI mangling grammar, <requires-clause expr>
+// always appears after Q.
+//
+// Does not emit the parsed `requires` clause to simplify the implementation.
+// In other words, these two functions' mangled names will demangle identically:
+//
+// template <typename T>
+// int foo(T) requires IsIntegral<T>;
+//
+// vs.
+//
+// template <typename T>
+// int foo(T);
+static bool ParseQRequiresClauseExpr(State *state) {
+  ComplexityGuard guard(state);
+  if (guard.IsTooComplex()) return false;
+  ParseState copy = state->parse_state;
+  DisableAppend(state);
+
+  // <requires-clause expr> is just an <expression>: http://shortn/_9E1Ul0rIM8
+  if (ParseOneCharToken(state, 'Q') && ParseExpression(state)) {
+    RestoreAppend(state, copy.append);
+    return true;
+  }
+
+  // also restores append
+  state->parse_state = copy;
   return false;
 }
 

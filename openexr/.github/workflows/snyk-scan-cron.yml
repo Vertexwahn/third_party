@@ -6,13 +6,8 @@ name: Snyk Scan Code
 
 on:
   # https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
-  pull_request:
-    branches:
-      - main
-    paths:
-      - '**.h'
-      - '**.c'
-      - '**.cpp'
+  schedule:
+    - cron: "0 4 * * 0"
 
 jobs:
   snyk-scan-pr:
