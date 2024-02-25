@@ -56,16 +56,16 @@ their usage, please refer to the `user guide <#user-guide>`__.
 Usage in Projects
 ~~~~~~~~~~~~~~~~~
 
-Assuming that glog was previously `built glog using CMake <#cmake>`__ or
-installed using a package manager, you can use the CMake command
-:cmake:`find_package` to build against glog in your CMake project as follows:
+Assuming that glog was previously `built using CMake <#cmake>`__ or installed
+using a package manager, you can use the CMake command :cmake:`find_package` to
+build against glog in your CMake project as follows:
 
 .. code:: cmake
 
    cmake_minimum_required (VERSION 3.16)
    project (myproj VERSION 1.0)
 
-   find_package (glog 0.6.0 REQUIRED)
+   find_package (glog 0.7.0 REQUIRED)
 
    add_executable (myapp main.cpp)
    target_link_libraries (myapp glog::glog)
@@ -473,7 +473,7 @@ it is executed.
 .. pull-quote::
    [!NOTE]
 
-   The placeholder ``google::COUNTER`` identifies the reccuring repetition.
+   The placeholder ``google::COUNTER`` identifies the recurring repetition.
 
 You can combine conditional and occasional logging with the following
 macro.
@@ -681,7 +681,7 @@ macro can be used as follows:
 
 Verbose level condition macros ``VLOG_IF``, ``VLOG_EVERY_N`` and
 ``VLOG_IF_EVERY_N`` behave analogous to ``LOG_IF``, ``LOG_EVERY_N``,
-``LOF_IF_EVERY``, but accept a numeric verbosity level as opposed to a
+``LOG_IF_EVERY_N``, but accept a numeric verbosity level as opposed to a
 severity level.
 
 .. code:: cpp

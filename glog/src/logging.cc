@@ -342,28 +342,6 @@ static bool SendEmailInternal(const char* dest, const char* subject,
 
 base::Logger::~Logger() = default;
 
-void base::Logger::Write(bool /*force_flush*/, time_t /*timestamp*/,
-                         const char* /*message*/, size_t /*message_len*/) {}
-
-void base::Logger::Write(bool force_flush,
-                         const std::chrono::system_clock::time_point& timestamp,
-                         const char* message, size_t message_len) {
-#if defined(__GNUG__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif  // __GNUG__
-  return Write(force_flush, std::chrono::system_clock::to_time_t(timestamp),
-               message, message_len);
-#if defined(__GNUG__)
-#  pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#  pragma warning(pop)
-#endif  // __GNUG__
-}
-
 namespace {
 
 constexpr std::intmax_t kSecondsInDay = 60 * 60 * 24;
@@ -372,44 +350,11 @@ constexpr std::intmax_t kSecondsInWeek = kSecondsInDay * 7;
 // Optional user-configured callback to print custom prefixes.
 class PrefixFormatter {
  public:
-#if defined(__GNUG__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif  // __GNUG__
-  PrefixFormatter(CustomPrefixCallback callback, void* data) noexcept
-      : version{V1}, callback_v1{callback}, data{data} {}
-#if defined(__GNUG__)
-#  pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#  pragma warning(pop)
-#endif  // __GNUG__
   PrefixFormatter(PrefixFormatterCallback callback, void* data) noexcept
       : version{V2}, callback_v2{callback}, data{data} {}
 
   void operator()(std::ostream& s, const LogMessage& message) const {
     switch (version) {
-      case V1:
-#if defined(__GNUG__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif  // __GNUG__
-        callback_v1(s,
-                    LogMessageInfo(LogSeverityNames[message.severity()],
-                                   message.basename(), message.line(),
-                                   message.thread_id(), message.time()),
-                    data);
-#if defined(__GNUG__)
-#  pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#  pragma warning(pop)
-#endif  // __GNUG__
-        break;
       case V2:
         callback_v2(s, message, data);
         break;
@@ -420,21 +365,8 @@ class PrefixFormatter {
   PrefixFormatter& operator=(const PrefixFormatter& other) = delete;
 
  private:
-  enum Version { V1, V2 } version;
+  enum Version { V2 } version;
   union {
-#if defined(__GNUG__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif  // __GNUG__
-    CustomPrefixCallback callback_v1;
-#if defined(__GNUG__)
-#  pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#  pragma warning(pop)
-#endif  // __GNUG__
     PrefixFormatterCallback callback_v2;
   };
   // User-provided data to pass to the callback:
@@ -1705,8 +1637,7 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
     std::snprintf(fileline, sizeof(fileline), "%s:%d", data_->basename_, line);
 #ifdef HAVE_STACKTRACE
     if (FLAGS_log_backtrace_at == fileline) {
-      string stacktrace;
-      DumpStackTraceToString(&stacktrace);
+      string stacktrace = GetStackTrace();
       stream() << " (stacktrace:\n" << stacktrace << ") ";
     }
 #endif
@@ -1723,8 +1654,9 @@ const char* LogMessage::fullname() const noexcept { return data_->fullname_; }
 const char* LogMessage::basename() const noexcept { return data_->basename_; }
 const LogMessageTime& LogMessage::time() const noexcept { return time_; }
 
-LogMessage::~LogMessage() {
+LogMessage::~LogMessage() noexcept(false) {
   Flush();
+  bool fail = data_->severity_ == GLOG_FATAL && exit_on_dfatal;
 #ifdef GLOG_THREAD_LOCAL_STORAGE
   if (data_ == static_cast<void*>(&thread_msg_data)) {
     data_->~LogMessageData();
@@ -1735,6 +1667,26 @@ LogMessage::~LogMessage() {
 #else   // !defined(GLOG_THREAD_LOCAL_STORAGE)
   delete allocated_;
 #endif  // defined(GLOG_THREAD_LOCAL_STORAGE)
+        //
+
+  if (fail) {
+    const char* message = "*** Check failure stack trace: ***\n";
+    if (write(fileno(stderr), message, strlen(message)) < 0) {
+      // Ignore errors.
+    }
+    AlsoErrorWrite(GLOG_FATAL,
+                   glog_internal_namespace_::ProgramInvocationShortName(),
+                   message);
+#if defined(__cpp_lib_uncaught_exceptions) && \
+    (__cpp_lib_uncaught_exceptions >= 201411L)
+    if (std::uncaught_exceptions() == 0)
+#else
+    if (!std::uncaught_exception())
+#endif
+    {
+      Fail();
+    }
+  }
 }
 
 int LogMessage::preserved_errno() const { return data_->preserved_errno_; }
@@ -1894,22 +1846,7 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
       }
     }
 
-    // release the lock that our caller (directly or indirectly)
-    // LogMessage::~LogMessage() grabbed so that signal handlers
-    // can use the logging facility. Alternately, we could add
-    // an entire unsafe logging interface to bypass locking
-    // for signal handlers but this seems simpler.
-    log_mutex.unlock();
     LogDestination::WaitForSinks(data_);
-
-    const char* message = "*** Check failure stack trace: ***\n";
-    if (write(fileno(stderr), message, strlen(message)) < 0) {
-      // Ignore errors.
-    }
-    AlsoErrorWrite(GLOG_FATAL,
-                   glog_internal_namespace_::ProgramInvocationShortName(),
-                   message);
-    Fail();
   }
 }
 
@@ -1941,8 +1878,8 @@ NullStreamFatal::~NullStreamFatal() {
   std::abort();
 }
 
-void InstallFailureFunction(logging_fail_func_t fail_func) {
-  g_logging_fail_func = fail_func;
+logging_fail_func_t InstallFailureFunction(logging_fail_func_t fail_func) {
+  return std::exchange(g_logging_fail_func, fail_func);
 }
 
 void LogMessage::Fail() { g_logging_fail_func(); }
@@ -2075,38 +2012,6 @@ void SetLogSymlink(LogSeverity severity, const char* symlink_basename) {
 }
 
 LogSink::~LogSink() = default;
-
-void LogSink::send(LogSeverity severity, const char* full_filename,
-                   const char* base_filename, int line,
-                   const LogMessageTime& time, const char* message,
-                   size_t message_len) {
-#if defined(__GNUG__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif  // __GNUG__
-  send(severity, full_filename, base_filename, line, &time.tm(), message,
-       message_len);
-#if defined(__GNUG__)
-#  pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#  pragma warning(pop)
-#endif  // __GNUG__
-}
-
-void LogSink::send(LogSeverity severity, const char* full_filename,
-                   const char* base_filename, int line, const std::tm* t,
-                   const char* message, size_t message_len) {
-  (void)severity;
-  (void)full_filename;
-  (void)base_filename;
-  (void)line;
-  (void)t;
-  (void)message;
-  (void)message_len;
-}
 
 void LogSink::WaitTillSent() {
   // noop default
@@ -2533,17 +2438,17 @@ namespace logging {
 namespace internal {
 // Helper functions for string comparisons.
 #define DEFINE_CHECK_STROP_IMPL(name, func, expected)                         \
-  string* Check##func##expected##Impl(const char* s1, const char* s2,         \
-                                      const char* names) {                    \
+  std::unique_ptr<string> Check##func##expected##Impl(                        \
+      const char* s1, const char* s2, const char* names) {                    \
     bool equal = s1 == s2 || (s1 && s2 && !func(s1, s2));                     \
-    if (equal == expected)                                                    \
+    if (equal == (expected))                                                  \
       return nullptr;                                                         \
     else {                                                                    \
       ostringstream ss;                                                       \
       if (!s1) s1 = "";                                                       \
       if (!s2) s2 = "";                                                       \
       ss << #name " failed: " << names << " (" << s1 << " vs. " << s2 << ")"; \
-      return new string(ss.str());                                            \
+      return std::make_unique<std::string>(ss.str());                         \
     }                                                                         \
   }
 DEFINE_CHECK_STROP_IMPL(CHECK_STREQ, strcmp, true)
@@ -2635,7 +2540,7 @@ LogMessageFatal::LogMessageFatal(const char* file, int line,
                                  const logging::internal::CheckOpString& result)
     : LogMessage(file, line, result) {}
 
-LogMessageFatal::~LogMessageFatal() {
+LogMessageFatal::~LogMessageFatal() noexcept(false) {
   Flush();
   LogMessage::Fail();
 }
@@ -2655,9 +2560,9 @@ ostream* CheckOpMessageBuilder::ForVar2() {
   return stream_;
 }
 
-string* CheckOpMessageBuilder::NewString() {
+std::unique_ptr<string> CheckOpMessageBuilder::NewString() {
   *stream_ << ")";
-  return new string(stream_->str());
+  return std::make_unique<std::string>(stream_->str());
 }
 
 template <>
@@ -2696,29 +2601,6 @@ void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& /*v*/) {
 }  // namespace logging
 
 void InitGoogleLogging(const char* argv0) { InitGoogleLoggingUtilities(argv0); }
-
-#if defined(__GNUG__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif  // __GNUG__
-void InitGoogleLogging(const char* argv0, CustomPrefixCallback prefix_callback,
-                       void* prefix_callback_data) {
-  if (prefix_callback != nullptr) {
-    g_prefix_formatter = std::make_unique<PrefixFormatter>(
-        prefix_callback, prefix_callback_data);
-  } else {
-    g_prefix_formatter = nullptr;
-  }
-  InitGoogleLogging(argv0);
-}
-#if defined(__GNUG__)
-#  pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#  pragma warning(pop)
-#endif  // __GNUG__
 
 void InstallPrefixFormatter(PrefixFormatterCallback callback, void* data) {
   if (callback != nullptr) {

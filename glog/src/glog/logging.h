@@ -57,7 +57,7 @@
 #endif
 
 #if !defined(GLOG_EXPORT) || !defined(GLOG_NO_EXPORT)
-#  error <glog/logging.h> was not included correctly. See the documention for how to consume the library.
+#  error <glog/logging.h> was not included correctly. See the documentation for how to consume the library.
 #endif
 
 #include "glog/flags.h"
@@ -83,10 +83,6 @@ struct GLOG_EXPORT LogMessageTime {
   LogMessageTime();
   explicit LogMessageTime(std::chrono::system_clock::time_point now);
 
-  [[deprecated("Use LogMessageTime::when() instead.")]] std::time_t timestamp()
-      const noexcept {
-    return std::chrono::system_clock::to_time_t(when());
-  }
   const std::chrono::system_clock::time_point& when() const noexcept {
     return timestamp_;
   }
@@ -100,10 +96,6 @@ struct GLOG_EXPORT LogMessageTime {
   int dayOfWeek() const noexcept { return tm_.tm_wday; }
   int dayInYear() const noexcept { return tm_.tm_yday; }
   int dst() const noexcept { return tm_.tm_isdst; }
-  [[deprecated("Use LogMessageTime::gmtoffset() instead.")]] long gmtoff()
-      const noexcept {
-    return gmtoffset_.count();
-  }
   std::chrono::seconds gmtoffset() const noexcept { return gmtoffset_; }
   const std::tm& tm() const noexcept { return tm_; }
 
@@ -113,24 +105,6 @@ struct GLOG_EXPORT LogMessageTime {
       timestamp_;  // Time of creation of LogMessage in seconds
   std::chrono::microseconds usecs_;
   std::chrono::seconds gmtoffset_;
-};
-
-struct [[deprecated("Use LogMessage instead.")]] LogMessageInfo {
-  explicit LogMessageInfo(const char* const severity_,
-                          const char* const filename_, const int& line_number_,
-                          std::thread::id thread_id_,
-                          const LogMessageTime& time_)
-      : severity(severity_),
-        filename(filename_),
-        line_number(line_number_),
-        thread_id(thread_id_),
-        time(time_) {}
-
-  const char* const severity;
-  const char* const filename;
-  const int& line_number;
-  std::thread::id thread_id;
-  const LogMessageTime& time;
 };
 
 }  // namespace google
@@ -482,27 +456,6 @@ namespace google {
 // specified by argv0 in log outputs.
 GLOG_EXPORT void InitGoogleLogging(const char* argv0);
 
-class LogMessage;
-
-#if defined(__GNUG__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif  // __GNUG__
-using CustomPrefixCallback
-    [[deprecated("Use PrefixFormatterCallback instead.")]] =
-        void (*)(std::ostream&, const LogMessageInfo&, void*);
-#if defined(__GNUG__)
-#  pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#  pragma warning(pop)
-#endif  // __GNUG__
-[[deprecated("Use InstallPrefixFormatter instead.")]] GLOG_EXPORT void
-InitGoogleLogging(const char* argv0, CustomPrefixCallback prefix_callback,
-                  void* prefix_callback_data = nullptr);
-
 // Check if google's logging library has been initialized.
 GLOG_EXPORT bool IsGoogleLoggingInitialized();
 
@@ -515,19 +468,19 @@ typedef void (*logging_fail_func_t)() __attribute__((noreturn));
 typedef void (*logging_fail_func_t)();
 #endif
 
+class LogMessage;
+
 using PrefixFormatterCallback = void (*)(std::ostream&, const LogMessage&,
                                          void*);
 
 GLOG_EXPORT void InstallPrefixFormatter(PrefixFormatterCallback callback,
                                         void* data = nullptr);
 
-// Install a function which will be called after LOG(FATAL).
-GLOG_EXPORT void InstallFailureFunction(logging_fail_func_t fail_func);
+// Install a function which will be called after LOG(FATAL). Returns the
+// previously set function.
+GLOG_EXPORT logging_fail_func_t
+InstallFailureFunction(logging_fail_func_t fail_func);
 
-[[deprecated(
-    "Use the type-safe std::chrono::minutes EnableLogCleaner overload "
-    "instead.")]] GLOG_EXPORT void
-EnableLogCleaner(unsigned int overdue_days);
 // Enable/Disable old log cleaner.
 GLOG_EXPORT void EnableLogCleaner(const std::chrono::minutes& overdue);
 GLOG_EXPORT void DisableLogCleaner();
@@ -606,13 +559,11 @@ namespace internal {
 // A container for a string pointer which can be evaluated to a bool -
 // true iff the pointer is nullptr.
 struct CheckOpString {
-  CheckOpString(std::string* str) : str_(str) {}
-  // No destructor: if str_ is non-nullptr, we're about to LOG(FATAL),
-  // so there's no point in cleaning up str_.
+  CheckOpString(std::unique_ptr<std::string> str) : str_(std::move(str)) {}
   explicit operator bool() const noexcept {
     return GOOGLE_PREDICT_BRANCH_NOT_TAKEN(str_ != nullptr);
   }
-  std::string* str_;
+  std::unique_ptr<std::string> str_;
 };
 
 // Function is overloaded for integral types to allow static const
@@ -671,7 +622,8 @@ GLOG_EXPORT void MakeCheckOpValueString(std::ostream* os,
 
 // Build the error message string. Specify no inlining for code size.
 template <typename T1, typename T2>
-std::string* MakeCheckOpString(const T1& v1, const T2& v2, const char* exprtext)
+std::unique_ptr<std::string> MakeCheckOpString(const T1& v1, const T2& v2,
+                                               const char* exprtext)
 #if defined(__has_attribute)
 #  if __has_attribute(used)
     __attribute__((noinline))
@@ -696,15 +648,15 @@ class GLOG_EXPORT CheckOpMessageBuilder {
   // For inserting the second variable (adds an intermediate " vs. ").
   std::ostream* ForVar2();
   // Get the result (inserts the closing ")").
-  std::string* NewString();
+  std::unique_ptr<std::string> NewString();
 
  private:
   std::ostringstream* stream_;
 };
 
 template <typename T1, typename T2>
-std::string* MakeCheckOpString(const T1& v1, const T2& v2,
-                               const char* exprtext) {
+std::unique_ptr<std::string> MakeCheckOpString(const T1& v1, const T2& v2,
+                                               const char* exprtext) {
   CheckOpMessageBuilder comb(exprtext);
   MakeCheckOpValueString(comb.ForVar1(), v1);
   MakeCheckOpValueString(comb.ForVar2(), v2);
@@ -715,17 +667,18 @@ std::string* MakeCheckOpString(const T1& v1, const T2& v2,
 // The (int, int) specialization works around the issue that the compiler
 // will not instantiate the template version of the function on values of
 // unnamed enum type - see comment below.
-#define DEFINE_CHECK_OP_IMPL(name, op)                                   \
-  template <typename T1, typename T2>                                    \
-  inline std::string* name##Impl(const T1& v1, const T2& v2,             \
-                                 const char* exprtext) {                 \
-    if (GOOGLE_PREDICT_TRUE(v1 op v2))                                   \
-      return nullptr;                                                    \
-    else                                                                 \
-      return MakeCheckOpString(v1, v2, exprtext);                        \
-  }                                                                      \
-  inline std::string* name##Impl(int v1, int v2, const char* exprtext) { \
-    return name##Impl<int, int>(v1, v2, exprtext);                       \
+#define DEFINE_CHECK_OP_IMPL(name, op)                                       \
+  template <typename T1, typename T2>                                        \
+  inline std::unique_ptr<std::string> name##Impl(const T1& v1, const T2& v2, \
+                                                 const char* exprtext) {     \
+    if (GOOGLE_PREDICT_TRUE(v1 op v2)) {                                     \
+      return nullptr;                                                        \
+    }                                                                        \
+    return MakeCheckOpString(v1, v2, exprtext);                              \
+  }                                                                          \
+  inline std::unique_ptr<std::string> name##Impl(int v1, int v2,             \
+                                                 const char* exprtext) {     \
+    return name##Impl<int, int>(v1, v2, exprtext);                           \
   }
 
 // We use the full name Check_EQ, Check_NE, etc. in case the file including
@@ -757,14 +710,15 @@ DEFINE_CHECK_OP_IMPL(Check_GT, >)
 // with other string implementations that get defined after this
 // file is included).  Save the current meaning now and use it
 // in the macro.
-typedef std::string _Check_string;
+using _Check_string = std::string;
 #  define CHECK_OP_LOG(name, op, val1, val2, log)                              \
-    while (google::logging::internal::_Check_string* _result =                 \
+    while (std::unique_ptr<google::logging::internal::_Check_string> _result = \
                google::logging::internal::Check##name##Impl(                   \
                    google::logging::internal::GetReferenceableValue(val1),     \
                    google::logging::internal::GetReferenceableValue(val2),     \
                    #val1 " " #op " " #val2))                                   \
-    log(__FILE__, __LINE__, google::logging::internal::CheckOpString(_result)) \
+    log(__FILE__, __LINE__,                                                    \
+        google::logging::internal::CheckOpString(std::move(_result)))          \
         .stream()
 #else
 // In optimized mode, use CheckOpString to hint to compiler that
@@ -820,8 +774,8 @@ typedef std::string _Check_string;
 
 // Helper functions for string comparisons.
 // To avoid bloat, the definitions are in logging.cc.
-#define DECLARE_CHECK_STROP_IMPL(func, expected)        \
-  GLOG_EXPORT std::string* Check##func##expected##Impl( \
+#define DECLARE_CHECK_STROP_IMPL(func, expected)                        \
+  GLOG_EXPORT std::unique_ptr<std::string> Check##func##expected##Impl( \
       const char* s1, const char* s2, const char* names);
 
 DECLARE_CHECK_STROP_IMPL(strcmp, true)
@@ -840,7 +794,7 @@ DECLARE_CHECK_STROP_IMPL(strcasecmp, false)
   while (google::logging::internal::CheckOpString _result =          \
              google::logging::internal::Check##func##expected##Impl( \
                  (s1), (s2), #s1 " " #op " " #s2))                   \
-  LOG(FATAL) << *_result.str_
+  LOG(FATAL) << (*_result.str_)
 
 // String (char*) equality/inequality checks.
 // CASE versions are case-insensitive.
@@ -1332,7 +1286,7 @@ class GLOG_EXPORT LogMessage {
   LogMessage(const char* file, int line,
              const logging::internal::CheckOpString& result);
 
-  ~LogMessage();
+  ~LogMessage() noexcept(false);
 
   // Flush a buffered message to the sink set in the constructor.  Always
   // called by the destructor, it may also be called from elsewhere if
@@ -1357,11 +1311,6 @@ class GLOG_EXPORT LogMessage {
 
   // Must be called without the log_mutex held.  (L < log_mutex)
   static int64 num_messages(int severity);
-
-  [[deprecated("Use LogMessage::time() instead.")]] const LogMessageTime&
-  getLogMessageTime() const {
-    return time();
-  }
 
   LogSeverity severity() const noexcept;
   int line() const noexcept;
@@ -1409,7 +1358,7 @@ class GLOG_EXPORT LogMessageFatal : public LogMessage {
   LogMessageFatal(const char* file, int line);
   LogMessageFatal(const char* file, int line,
                   const logging::internal::CheckOpString& result);
-  [[noreturn]] ~LogMessageFatal();
+  [[noreturn]] ~LogMessageFatal() noexcept(false);
 };
 
 // A non-macro interface to the log facility; (useful
@@ -1462,7 +1411,7 @@ namespace internal {
 template <typename T>
 T CheckNotNull(const char* file, int line, const char* names, T&& t) {
   if (t == nullptr) {
-    LogMessageFatal(file, line, new std::string(names));
+    LogMessageFatal(file, line, std::make_unique<std::string>(names));
   }
   return std::forward<T>(t);
 }
@@ -1517,12 +1466,7 @@ class GLOG_EXPORT LogSink {
   virtual void send(LogSeverity severity, const char* full_filename,
                     const char* base_filename, int line,
                     const LogMessageTime& time, const char* message,
-                    size_t message_len);
-  // Provide an overload for compatibility purposes
-  GLOG_DEPRECATED
-  virtual void send(LogSeverity severity, const char* full_filename,
-                    const char* base_filename, int line, const std::tm* t,
-                    const char* message, size_t message_len);
+                    size_t message_len) = 0;
 
   // Redefine this to implement waiting for
   // the sink's logging logic to complete.
@@ -1634,15 +1578,9 @@ class GLOG_EXPORT Logger {
   // appropriate by the higher level logging facility.  For example,
   // textual log messages already contain timestamps, and the
   // file:linenumber header.
-  [[deprecated(
-      "Logger::Write accepting a std::time_t timestamp is provided for "
-      "compatibility purposes only. New code should implement the "
-      "std::chrono::system_clock::time_point overload.")]] virtual void
-  Write(bool force_flush, time_t timestamp, const char* message,
-        size_t message_len);
   virtual void Write(bool force_flush,
                      const std::chrono::system_clock::time_point& timestamp,
-                     const char* message, size_t message_len);
+                     const char* message, size_t message_len) = 0;
 
   // Flush any buffered messages
   virtual void Flush() = 0;
@@ -1732,6 +1670,9 @@ GLOG_EXPORT bool IsFailureSignalHandlerInstalled();
 // terminated with '\0'.
 GLOG_EXPORT void InstallFailureWriter(void (*writer)(const char* data,
                                                      size_t size));
+
+// Dump stack trace as a string.
+GLOG_EXPORT std::string GetStackTrace();
 
 }  // namespace google
 
