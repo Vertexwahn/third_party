@@ -30,7 +30,7 @@ tmpdir=$(mktemp -d)
 trap "rm -rf $tmpdir" EXIT 
 
 # Version number of xz
-xz_version_number="5.4.2"
+xz_version_number="5.4.5"
 
 # Download, and untar xz
 cd "$tmpdir"

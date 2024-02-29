@@ -6,7 +6,7 @@
 
 /* How many MiB of RAM to assume if the real amount cannot be determined. */
 #define ASSUME_RAM 128
-
+#define HAVE_LZIP_DECODER 1
 /* Define to 1 if translation of program messages to the user's native
    language is requested. */
 #define ENABLE_NLS 1

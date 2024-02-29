@@ -14,4 +14,5 @@ patch -p1 < /home/username/bazel-central-registry/modules/xz/5.4.5/patches/patch
 
 ```shell
 bazel test //:all_tests
+bazel test --enable_runfiles //:all_tests  # Use this on Windows!
 ```
