@@ -7,6 +7,7 @@
 #    undef NDEBUG
 #endif
 
+#include "testQuat.h"
 #include <ImathFun.h>
 #include <ImathMatrixAlgo.h>
 #include <ImathPlatform.h>
@@ -14,7 +15,6 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
-#include "testQuat.h"
 
 // Include ImathForward *after* other headers to validate forward declarations
 #include <ImathForward.h>
@@ -29,37 +29,63 @@ template <class T>
 void
 testQuatT ()
 {
-    const T s = std::numeric_limits<T>::min();
-    const T e = 4 * std::numeric_limits<T>::epsilon();
+    const T s = std::numeric_limits<T>::min ();
+    const T e = 4 * std::numeric_limits<T>::epsilon ();
 
     //
     // constructors, r(), v()
     //
 
     {
-	Quat<T> q = Quat<T>();
-	assert (q.r == 1 && q.v == Vec3<T> (0, 0, 0));
+        Quat<T> q = Quat<T> ();
+        assert (q.r == 1 && q.v == Vec3<T> (0, 0, 0));
 
-	q = Quat<T> (2, 3, 4, 5);
-	assert (q.r == 2 && q.v == Vec3<T> (3, 4, 5));
+        q = Quat<T> (2, 3, 4, 5);
+        assert (q.r == 2 && q.v == Vec3<T> (3, 4, 5));
 
-	q = Quat<T> (6, Vec3<T> (7, 8, 9));
-	assert (q.r == 6 && q.v == Vec3<T> (7, 8, 9));
+        q = Quat<T> (6, Vec3<T> (7, 8, 9));
+        assert (q.r == 6 && q.v == Vec3<T> (7, 8, 9));
 
-	Quat<T> q1 = Quat<T> (q);
-	assert (q1.r == 6 && q1.v == Vec3<T> (7, 8, 9));
+        Quat<T> q1 = Quat<T> (q);
+        assert (q1.r == 6 && q1.v == Vec3<T> (7, 8, 9));
     }
 
+    // m * q
+    {
+        Matrix33<T> m;
+        m.setRotation(T(M_PI_2));
+        Quat<T> q;
+        q.setAxisAngle (Vec3<T> (0, 0, 1), T(M_PI_2));
+        Matrix33<T> mp = m * q;
+        Matrix33<T> r (-9.999999e-01f,  1.589326e-08f, 0.000000e+00f,
+                       -1.589326e-08f, -9.999999e-01f, 0.000000e+00f,
+                       0.000000e+00f,   0.000000e+00f, 1.000000e+00);
+        assert(mp.equalWithAbsError(r, 1e-5));
+    }
+
+    // q * m
+    {
+        Matrix33<T> m;
+        m.setRotation(T(M_PI_2));
+        Quat<T> q;
+        q.setAxisAngle (Vec3<T> (0, 0, 1), T(M_PI_2));
+        Matrix33<T> mp = m * q;
+        Matrix33<T> r (-9.999999e-01f,  1.589326e-08f, 0.000000e+00f,
+                       -1.589326e-08f, -9.999999e-01f, 0.000000e+00f,
+                       0.000000e+00f,   0.000000e+00f, 1.000000e+00);
+        assert(mp.equalWithAbsError(r, 1e-5));
+    }
+    
     //
     // invert(), inverse()
     //
 
     {
-	Quat<T> q = Quat<T> (1, 0, 0, 1);
-	assert (q.inverse() == Quat<T> (0.5, 0, 0, -0.5));
+        Quat<T> q = Quat<T> (1, 0, 0, 1);
+        assert (q.inverse () == Quat<T> (0.5, 0, 0, -0.5));
 
-	q.invert();
-	assert (q == Quat<T> (0.5, 0, 0, -0.5));
+        q.invert ();
+        assert (q == Quat<T> (0.5, 0, 0, -0.5));
     }
 
     //
@@ -67,17 +93,22 @@ testQuatT ()
     //
 
     {
-	Quat<T> q = Quat<T> (2, Vec3<T> (0, 0, 0));
-	assert (q.normalized() == Quat<T> (1, 0, 0, 0));
+        Quat<T> q = Quat<T> (2, Vec3<T> (0, 0, 0));
+        assert (q.normalized () == Quat<T> (1, 0, 0, 0));
 
-	q.normalize();
-	assert (q == Quat<T> (1, 0, 0, 0));
+        q.normalize ();
+        assert (q == Quat<T> (1, 0, 0, 0));
 
-	q = Quat<T> (0, Vec3<T> (0, 2, 0));
-	assert (q.normalized() == Quat<T> (0, 0, 1, 0));
+        q = Quat<T> (0, Vec3<T> (0, 2, 0));
+        assert (q.normalized () == Quat<T> (0, 0, 1, 0));
 
-	q.normalize();
-	assert (q == Quat<T> (0, 0, 1, 0));
+        q.normalize ();
+        assert (q == Quat<T> (0, 0, 1, 0));
+
+        q = Quat<T> (0, Vec3<T> (0, 0, 0));
+        q.normalize();
+        assert (q.r == 1 && q.v == Vec3<T>(0,0,0));
+        
     }
 
     //
@@ -85,8 +116,8 @@ testQuatT ()
     //
 
     {
-	Quat<T> q = Quat<T> (3, 0, 4, 0);
-	assert (q.length() == 5);
+        Quat<T> q = Quat<T> (3, 0, 4, 0);
+        assert (q.length () == 5);
     }
 
     //
@@ -148,10 +179,10 @@ testQuatT ()
     //
 
     {
-	Quat<T> q;
-	q.setRotation (Vec3<T> (1, 0, 0), Vec3<T> (0, 1, 0));
+        Quat<T> q;
+        q.setRotation (Vec3<T> (1, 0, 0), Vec3<T> (0, 1, 0));
 
-	Matrix33<T> m1 = q.toMatrix33();
+        Matrix33<T> m1 = q.toMatrix33 ();
 
         // clang-format off
         
@@ -174,23 +205,30 @@ testQuatT ()
     // +, - (unary and binary), ~ *, /, ^
     //
 
-    assert (Quat<T> (1, 2, 3, 4) + Quat<T> (5, 6, 7, 8) == Quat<T> (6, 8, 10, 12));
+    assert (
+        Quat<T> (1, 2, 3, 4) + Quat<T> (5, 6, 7, 8) == Quat<T> (6, 8, 10, 12));
 
-    assert (Quat<T> (-1, -2, -3, -4) - Quat<T> (5, 6, 7, 8) == Quat<T> (-6, -8, -10, -12));
+    assert (
+        Quat<T> (-1, -2, -3, -4) - Quat<T> (5, 6, 7, 8) ==
+        Quat<T> (-6, -8, -10, -12));
 
     assert (-Quat<T> (1, 2, 3, 4) == Quat<T> (-1, -2, -3, -4));
-    
+
     assert (~Quat<T> (1, 2, 3, 4) == Quat<T> (1, -2, -3, -4));
 
     assert (T (2) * Quat<T> (1, 2, 3, 4) == Quat<T> (2, 4, 6, 8));
 
-    assert (Quat<T> (1, 2, 3, 4) * T (2 )== Quat<T> (2, 4, 6, 8));
+    assert (Quat<T> (1, 2, 3, 4) * T (2) == Quat<T> (2, 4, 6, 8));
 
-    assert (Quat<T> (1, 0, 0, 1) * Quat<T> (1, 1, 0, 0) == Quat<T> (1, 1, 1, 1));
+    assert (
+        Quat<T> (1, 0, 0, 1) * Quat<T> (1, 1, 0, 0) == Quat<T> (1, 1, 1, 1));
 
-    assert (Quat<T> (1, 1, 0, 0) * Quat<T> (1, 0, 0, 1) == Quat<T> (1, 1, -1, 1));
-    
-    assert (Quat<T> (1, 0, 0, 1) / Quat<T> (0.5, -0.5, 0, 0) == Quat<T> (1, 1, 1, 1));
+    assert (
+        Quat<T> (1, 1, 0, 0) * Quat<T> (1, 0, 0, 1) == Quat<T> (1, 1, -1, 1));
+
+    assert (
+        Quat<T> (1, 0, 0, 1) / Quat<T> (0.5, -0.5, 0, 0) ==
+        Quat<T> (1, 1, 1, 1));
 
     assert (Quat<T> (2, 4, 6, 8) / T (2) == Quat<T> (1, 2, 3, 4));
 
@@ -201,47 +239,45 @@ testQuatT ()
     //
 
     {
-	Vec3<T> vFrom (1, 0, 0);
-	Vec3<T> vTo (0, 1, 1);
-	Matrix44<T> m1 = rotationMatrix (vFrom, vTo);
-	
+        Vec3<T>     vFrom (1, 0, 0);
+        Vec3<T>     vTo (0, 1, 1);
+        Matrix44<T> m1 = rotationMatrix (vFrom, vTo);
+
         Quat<T> q = extractQuat (m1);
         ;
 
-	Matrix44<T> m2 = q.toMatrix44();
+        Matrix44<T> m2 = q.toMatrix44 ();
 
-	assert (m2.equalWithAbsError (m1, 2 * e));
+        assert (m2.equalWithAbsError (m1, 2 * e));
     }
 }
-
 
 void
 testQuatConversions ()
 {
     {
-	Quatf q (1, V3f (2, 3, 4));
-	Quatd q1 = Quatd (q);
-	assert (q1.r == 1 && q1.v == V3d (2, 3, 4));
+        Quatf q (1, V3f (2, 3, 4));
+        Quatd q1 = Quatd (q);
+        assert (q1.r == 1 && q1.v == V3d (2, 3, 4));
     }
 
     {
-	Quatd q (1, V3d (2, 3, 4));
-	Quatf q1 = Quatf (q);
-	assert (q1.r == 1 && q1.v == V3f (2, 3, 4));
+        Quatd q (1, V3d (2, 3, 4));
+        Quatf q1 = Quatf (q);
+        assert (q1.r == 1 && q1.v == V3f (2, 3, 4));
     }
 }
 
 } // namespace
-
 
 void
 testQuat ()
 {
     cout << "Testing basic quaternion operations" << endl;
 
-    testQuatT<float>();
-    testQuatT<double>();
-    testQuatConversions();
+    testQuatT<float> ();
+    testQuatT<double> ();
+    testQuatConversions ();
 
     cout << "ok\n" << endl;
 }

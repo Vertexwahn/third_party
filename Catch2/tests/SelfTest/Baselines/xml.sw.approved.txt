@@ -3142,34 +3142,34 @@ Nor would this
     <Section name="Specifically escaped" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
       <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          tab == '\t'
+          ::Catch::Detail::stringify('\t') == "'\\t'"
         </Original>
         <Expanded>
-          '\t' == '\t'
+          "'\t'" == "'\t'"
         </Expanded>
       </Expression>
       <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          newline == '\n'
+          ::Catch::Detail::stringify('\n') == "'\\n'"
         </Original>
         <Expanded>
-          '\n' == '\n'
+          "'\n'" == "'\n'"
         </Expanded>
       </Expression>
       <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          carr_return == '\r'
+          ::Catch::Detail::stringify('\r') == "'\\r'"
         </Original>
         <Expanded>
-          '\r' == '\r'
+          "'\r'" == "'\r'"
         </Expanded>
       </Expression>
       <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          form_feed == '\f'
+          ::Catch::Detail::stringify('\f') == "'\\f'"
         </Original>
         <Expanded>
-          '\f' == '\f'
+          "'\f'" == "'\f'"
         </Expanded>
       </Expression>
       <OverallResults successes="4" failures="0" expectedFailures="0" skipped="false"/>
@@ -3177,88 +3177,56 @@ Nor would this
     <Section name="General chars" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
       <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          space == ' '
+          ::Catch::Detail::stringify( ' ' ) == "' '"
         </Original>
         <Expanded>
-          ' ' == ' '
+          "' '" == "' '"
         </Expanded>
       </Expression>
-      <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
+      <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          c == chars[i]
+          ::Catch::Detail::stringify( 'A' ) == "'A'"
         </Original>
         <Expanded>
-          'a' == 'a'
+          "'A'" == "'A'"
         </Expanded>
       </Expression>
-      <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
+      <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          c == chars[i]
+          ::Catch::Detail::stringify( 'z' ) == "'z'"
         </Original>
         <Expanded>
-          'z' == 'z'
+          "'z'" == "'z'"
         </Expanded>
       </Expression>
-      <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
-        <Original>
-          c == chars[i]
-        </Original>
-        <Expanded>
-          'A' == 'A'
-        </Expanded>
-      </Expression>
-      <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
-        <Original>
-          c == chars[i]
-        </Original>
-        <Expanded>
-          'Z' == 'Z'
-        </Expanded>
-      </Expression>
-      <OverallResults successes="5" failures="0" expectedFailures="0" skipped="false"/>
+      <OverallResults successes="3" failures="0" expectedFailures="0" skipped="false"/>
     </Section>
     <Section name="Low ASCII" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
       <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          null_terminator == '\0'
+          ::Catch::Detail::stringify( '\0' ) == "0"
         </Original>
         <Expanded>
-          0 == 0
+          "0" == "0"
         </Expanded>
       </Expression>
-      <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
+      <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          c == i
+          ::Catch::Detail::stringify( static_cast&lt;char>(2) ) == "2"
         </Original>
         <Expanded>
-          2 == 2
+          "2" == "2"
         </Expanded>
       </Expression>
-      <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
+      <Expression success="true" type="CHECK" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
         <Original>
-          c == i
+          ::Catch::Detail::stringify( static_cast&lt;char>(5) ) == "5"
         </Original>
         <Expanded>
-          3 == 3
+          "5" == "5"
         </Expanded>
       </Expression>
-      <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
-        <Original>
-          c == i
-        </Original>
-        <Expanded>
-          4 == 4
-        </Expanded>
-      </Expression>
-      <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/ToStringGeneral.tests.cpp" >
-        <Original>
-          c == i
-        </Original>
-        <Expanded>
-          5 == 5
-        </Expanded>
-      </Expression>
-      <OverallResults successes="5" failures="0" expectedFailures="0" skipped="false"/>
+      <OverallResults successes="3" failures="0" expectedFailures="0" skipped="false"/>
     </Section>
     <OverallResult success="true" skips="0"/>
   </TestCase>
@@ -13592,10 +13560,10 @@ Message from section two
   <TestCase name="Template test case with test types specified inside non-copyable and non-movable std::tuple - NonCopyableAndNonMovableTypes - 0" tags="[list][template]" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
     <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
       <Original>
-        sizeof(TestType) > 0
+        std::is_default_constructible&lt;TestType>::value
       </Original>
       <Expanded>
-        1 > 0
+        true
       </Expanded>
     </Expression>
     <OverallResult success="true" skips="0"/>
@@ -13603,10 +13571,10 @@ Message from section two
   <TestCase name="Template test case with test types specified inside non-copyable and non-movable std::tuple - NonCopyableAndNonMovableTypes - 1" tags="[list][template]" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
     <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
       <Original>
-        sizeof(TestType) > 0
+        std::is_default_constructible&lt;TestType>::value
       </Original>
       <Expanded>
-        4 > 0
+        true
       </Expanded>
     </Expression>
     <OverallResult success="true" skips="0"/>
@@ -13614,10 +13582,10 @@ Message from section two
   <TestCase name="Template test case with test types specified inside non-default-constructible std::tuple - MyNonDefaultConstructibleTypes - 0" tags="[list][template]" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
     <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
       <Original>
-        sizeof(TestType) > 0
+        std::is_trivially_copyable&lt;TestType>::value
       </Original>
       <Expanded>
-        1 > 0
+        true
       </Expanded>
     </Expression>
     <OverallResult success="true" skips="0"/>
@@ -13625,10 +13593,10 @@ Message from section two
   <TestCase name="Template test case with test types specified inside non-default-constructible std::tuple - MyNonDefaultConstructibleTypes - 1" tags="[list][template]" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
     <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
       <Original>
-        sizeof(TestType) > 0
+        std::is_trivially_copyable&lt;TestType>::value
       </Original>
       <Expanded>
-        4 > 0
+        true
       </Expanded>
     </Expression>
     <OverallResult success="true" skips="0"/>
@@ -13636,10 +13604,10 @@ Message from section two
   <TestCase name="Template test case with test types specified inside std::tuple - MyTypes - 0" tags="[list][template]" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
     <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
       <Original>
-        sizeof(TestType) > 0
+        std::is_arithmetic&lt;TestType>::value
       </Original>
       <Expanded>
-        4 > 0
+        true
       </Expanded>
     </Expression>
     <OverallResult success="true" skips="0"/>
@@ -13647,10 +13615,10 @@ Message from section two
   <TestCase name="Template test case with test types specified inside std::tuple - MyTypes - 1" tags="[list][template]" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
     <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
       <Original>
-        sizeof(TestType) > 0
+        std::is_arithmetic&lt;TestType>::value
       </Original>
       <Expanded>
-        1 > 0
+        true
       </Expanded>
     </Expression>
     <OverallResult success="true" skips="0"/>
@@ -13658,10 +13626,10 @@ Message from section two
   <TestCase name="Template test case with test types specified inside std::tuple - MyTypes - 2" tags="[list][template]" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
     <Expression success="true" type="REQUIRE" filename="tests/<exe-name>/UsageTests/Misc.tests.cpp" >
       <Original>
-        sizeof(TestType) > 0
+        std::is_arithmetic&lt;TestType>::value
       </Original>
       <Expanded>
-        4 > 0
+        true
       </Expanded>
     </Expression>
     <OverallResult success="true" skips="0"/>
@@ -20064,6 +20032,50 @@ b1!
           "abcdefcg" == "abcdefcg"
         </Expanded>
       </Expression>
+      <OverallResults successes="2" failures="0" expectedFailures="0" skipped="false"/>
+    </Section>
+    <Section name="no replace in already-replaced string" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >
+      <Section name="lengthening" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >
+        <Expression success="true" type="CHECK" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >
+          <Original>
+            Catch::replaceInPlace(letters, "c", "cc")
+          </Original>
+          <Expanded>
+            true
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >
+          <Original>
+            letters == "abccdefccg"
+          </Original>
+          <Expanded>
+            "abccdefccg" == "abccdefccg"
+          </Expanded>
+        </Expression>
+        <OverallResults successes="2" failures="0" expectedFailures="0" skipped="false"/>
+      </Section>
+      <OverallResults successes="2" failures="0" expectedFailures="0" skipped="false"/>
+    </Section>
+    <Section name="no replace in already-replaced string" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >
+      <Section name="shortening" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >
+        <Expression success="true" type="CHECK" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >
+          <Original>
+            Catch::replaceInPlace(s, "--", "-")
+          </Original>
+          <Expanded>
+            true
+          </Expanded>
+        </Expression>
+        <Expression success="true" type="CHECK" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >
+          <Original>
+            s == "--"
+          </Original>
+          <Expanded>
+            "--" == "--"
+          </Expanded>
+        </Expression>
+        <OverallResults successes="2" failures="0" expectedFailures="0" skipped="false"/>
+      </Section>
       <OverallResults successes="2" failures="0" expectedFailures="0" skipped="false"/>
     </Section>
     <Section name="escape '" filename="tests/<exe-name>/IntrospectiveTests/StringManip.tests.cpp" >

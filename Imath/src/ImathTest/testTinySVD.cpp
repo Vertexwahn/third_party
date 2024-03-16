@@ -18,9 +18,9 @@ template <typename T>
 void
 verifyOrthonormal (const IMATH_INTERNAL_NAMESPACE::Matrix33<T>& A)
 {
-    const T valueEps = T (100) * std::numeric_limits<T>::epsilon();
+    const T valueEps = T (100) * std::numeric_limits<T>::epsilon ();
 
-    const IMATH_INTERNAL_NAMESPACE::Matrix33<T> prod = A * A.transposed();
+    const IMATH_INTERNAL_NAMESPACE::Matrix33<T> prod = A * A.transposed ();
     for (int i = 0; i < 3; ++i)
     {
         for (int j = 0; j < 3; ++j)
@@ -37,9 +37,9 @@ template <typename T>
 void
 verifyOrthonormal (const IMATH_INTERNAL_NAMESPACE::Matrix44<T>& A)
 {
-    const T valueEps = T (100) * std::numeric_limits<T>::epsilon();
+    const T valueEps = T (100) * std::numeric_limits<T>::epsilon ();
 
-    const IMATH_INTERNAL_NAMESPACE::Matrix44<T> prod = A * A.transposed();
+    const IMATH_INTERNAL_NAMESPACE::Matrix44<T> prod = A * A.transposed ();
     for (int i = 0; i < 4; ++i)
     {
         for (int j = 0; j < 4; ++j)
@@ -61,7 +61,7 @@ verifyTinySVD_3x3 (const IMATH_INTERNAL_NAMESPACE::Matrix33<T>& A)
         for (int j = 0; j < 3; ++j)
             maxEntry = std::max (maxEntry, std::abs (A[i][j]));
 
-    const T eps      = std::numeric_limits<T>::epsilon();
+    const T eps      = std::numeric_limits<T>::epsilon ();
     const T valueEps = maxEntry * T (10) * eps;
 
     for (int i = 0; i < 2; ++i)
@@ -69,14 +69,14 @@ verifyTinySVD_3x3 (const IMATH_INTERNAL_NAMESPACE::Matrix33<T>& A)
         const bool posDet = (i == 0);
 
         IMATH_INTERNAL_NAMESPACE::Matrix33<T> U, V;
-        IMATH_INTERNAL_NAMESPACE::Vec3<T> S;
+        IMATH_INTERNAL_NAMESPACE::Vec3<T>     S;
         IMATH_INTERNAL_NAMESPACE::jacobiSVD (A, U, S, V, eps, posDet);
 
         IMATH_INTERNAL_NAMESPACE::Matrix33<T> S_times_Vt;
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
                 S_times_Vt[i][j] = S[j] * V[i][j];
-        S_times_Vt.transpose();
+        S_times_Vt.transpose ();
 
         // Verify that the product of the matrices is A:
         const IMATH_INTERNAL_NAMESPACE::Matrix33<T> product = U * S_times_Vt;
@@ -87,8 +87,8 @@ verifyTinySVD_3x3 (const IMATH_INTERNAL_NAMESPACE::Matrix33<T>& A)
         // Verify that U and V are orthogonal:
         if (posDet)
         {
-            assert (U.determinant() > 0.9);
-            assert (V.determinant() > 0.9);
+            assert (U.determinant () > 0.9);
+            assert (V.determinant () > 0.9);
         }
 
         // Verify that the singular values are sorted:
@@ -99,8 +99,7 @@ verifyTinySVD_3x3 (const IMATH_INTERNAL_NAMESPACE::Matrix33<T>& A)
         for (int i = 0; i < 2; ++i)
             assert (S[i] >= T (0));
 
-        if (!posDet)
-            assert (S[2] >= T (0));
+        if (!posDet) assert (S[2] >= T (0));
 
         verifyOrthonormal (U);
         verifyOrthonormal (V);
@@ -116,7 +115,7 @@ verifyTinySVD_4x4 (const IMATH_INTERNAL_NAMESPACE::Matrix44<T>& A)
         for (int j = 0; j < 4; ++j)
             maxEntry = std::max (maxEntry, std::abs (A[i][j]));
 
-    const T eps      = std::numeric_limits<T>::epsilon();
+    const T eps      = std::numeric_limits<T>::epsilon ();
     const T valueEps = maxEntry * T (100) * eps;
 
     for (int i = 0; i < 2; ++i)
@@ -124,14 +123,14 @@ verifyTinySVD_4x4 (const IMATH_INTERNAL_NAMESPACE::Matrix44<T>& A)
         const bool posDet = (i == 0);
 
         IMATH_INTERNAL_NAMESPACE::Matrix44<T> U, V;
-        IMATH_INTERNAL_NAMESPACE::Vec4<T> S;
+        IMATH_INTERNAL_NAMESPACE::Vec4<T>     S;
         IMATH_INTERNAL_NAMESPACE::jacobiSVD (A, U, S, V, eps, posDet);
 
         IMATH_INTERNAL_NAMESPACE::Matrix44<T> S_times_Vt;
         for (int i = 0; i < 4; ++i)
             for (int j = 0; j < 4; ++j)
                 S_times_Vt[i][j] = S[j] * V[i][j];
-        S_times_Vt.transpose();
+        S_times_Vt.transpose ();
 
         // Verify that the product of the matrices is A:
         const IMATH_INTERNAL_NAMESPACE::Matrix44<T> product = U * S_times_Vt;
@@ -142,8 +141,8 @@ verifyTinySVD_4x4 (const IMATH_INTERNAL_NAMESPACE::Matrix44<T>& A)
         // Verify that U and V have positive determinant if requested:
         if (posDet)
         {
-            assert (U.determinant() > 0.99);
-            assert (V.determinant() > 0.99);
+            assert (U.determinant () > 0.99);
+            assert (V.determinant () > 0.99);
         }
 
         // Verify that the singular values are sorted:
@@ -154,8 +153,7 @@ verifyTinySVD_4x4 (const IMATH_INTERNAL_NAMESPACE::Matrix44<T>& A)
         for (int i = 0; i < 3; ++i)
             assert (S[i] >= T (0));
 
-        if (!posDet)
-            assert (S[3] >= T (0));
+        if (!posDet) assert (S[3] >= T (0));
 
         verifyOrthonormal (U);
         verifyOrthonormal (V);
@@ -166,15 +164,16 @@ template <typename T>
 void
 testTinySVD_3x3 (const IMATH_INTERNAL_NAMESPACE::Matrix33<T>& A)
 {
-    std::cout << "Verifying SVD for [[" << A[0][0] << ", " << A[0][1] << ", " << A[0][2] << "], "
+    std::cout << "Verifying SVD for [[" << A[0][0] << ", " << A[0][1] << ", "
+              << A[0][2] << "], "
               << "[" << A[1][0] << ", " << A[1][1] << ", " << A[1][2] << "], "
               << "[" << A[2][0] << ", " << A[2][1] << ", " << A[2][2] << "]]\n";
 
     verifyTinySVD_3x3 (A);
-    verifyTinySVD_3x3 (A.transposed());
+    verifyTinySVD_3x3 (A.transposed ());
 
     // Try all different orderings of the columns of A:
-    int cols[3] = { 0, 1, 2 };
+    int cols[3] = {0, 1, 2};
     do
     {
         IMATH_INTERNAL_NAMESPACE::Matrix33<T> B;
@@ -188,15 +187,16 @@ testTinySVD_3x3 (const IMATH_INTERNAL_NAMESPACE::Matrix33<T>& A)
 
 template <typename T>
 void
-testTinySVD_3x3 (const T a,
-                 const T b,
-                 const T c,
-                 const T d,
-                 const T e,
-                 const T f,
-                 const T g,
-                 const T h,
-                 const T i)
+testTinySVD_3x3 (
+    const T a,
+    const T b,
+    const T c,
+    const T d,
+    const T e,
+    const T f,
+    const T g,
+    const T h,
+    const T i)
 {
     const IMATH_INTERNAL_NAMESPACE::Matrix33<T> A (a, b, c, d, e, f, g, h, i);
     testTinySVD_3x3 (A);
@@ -206,17 +206,20 @@ template <typename T>
 void
 testTinySVD_4x4 (const IMATH_INTERNAL_NAMESPACE::Matrix44<T>& A)
 {
-    std::cout << "Verifying SVD for [[" << A[0][0] << ", " << A[0][1] << ", " << A[0][2] << ", "
-              << A[0][3] << "], "
-              << "[" << A[1][0] << ", " << A[1][1] << ", " << A[1][2] << ", " << A[1][3] << "], "
-              << "[" << A[2][0] << ", " << A[2][1] << ", " << A[2][2] << ", " << A[2][3] << "], "
-              << "[" << A[3][0] << ", " << A[3][1] << ", " << A[3][2] << ", " << A[3][3] << "]]\n";
+    std::cout << "Verifying SVD for [[" << A[0][0] << ", " << A[0][1] << ", "
+              << A[0][2] << ", " << A[0][3] << "], "
+              << "[" << A[1][0] << ", " << A[1][1] << ", " << A[1][2] << ", "
+              << A[1][3] << "], "
+              << "[" << A[2][0] << ", " << A[2][1] << ", " << A[2][2] << ", "
+              << A[2][3] << "], "
+              << "[" << A[3][0] << ", " << A[3][1] << ", " << A[3][2] << ", "
+              << A[3][3] << "]]\n";
 
     verifyTinySVD_4x4 (A);
-    verifyTinySVD_4x4 (A.transposed());
+    verifyTinySVD_4x4 (A.transposed ());
 
     // Try all different orderings of the columns of A:
-    int cols[4] = { 0, 1, 2, 3 };
+    int cols[4] = {0, 1, 2, 3};
     do
     {
         IMATH_INTERNAL_NAMESPACE::Matrix44<T> B;
@@ -230,30 +233,32 @@ testTinySVD_4x4 (const IMATH_INTERNAL_NAMESPACE::Matrix44<T>& A)
 
 template <typename T>
 void
-testTinySVD_4x4 (const T a,
-                 const T b,
-                 const T c,
-                 const T d,
-                 const T e,
-                 const T f,
-                 const T g,
-                 const T h,
-                 const T i,
-                 const T j,
-                 const T k,
-                 const T l,
-                 const T m,
-                 const T n,
-                 const T o,
-                 const T p)
+testTinySVD_4x4 (
+    const T a,
+    const T b,
+    const T c,
+    const T d,
+    const T e,
+    const T f,
+    const T g,
+    const T h,
+    const T i,
+    const T j,
+    const T k,
+    const T l,
+    const T m,
+    const T n,
+    const T o,
+    const T p)
 {
-    const IMATH_INTERNAL_NAMESPACE::Matrix44<T> A (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
+    const IMATH_INTERNAL_NAMESPACE::Matrix44<T> A (
+        a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
     testTinySVD_4x4 (A);
 }
 
 template <typename T>
 void
-testTinySVDImp()
+testTinySVDImp ()
 {
     // Try a bunch of 3x3 matrices:
     testTinySVD_3x3<T> (1, 0, 0, 0, 1, 0, 0, 0, 1);
@@ -383,11 +388,13 @@ testTinySVDImp()
 }
 
 void
-testTinySVD()
+testTinySVD ()
 {
-    std::cout << "Testing TinySVD algorithms in single precision..." << std::endl;
-    testTinySVDImp<float>();
+    std::cout << "Testing TinySVD algorithms in single precision..."
+              << std::endl;
+    testTinySVDImp<float> ();
 
-    std::cout << "Testing TinySVD algorithms in double precision..." << std::endl;
-    testTinySVDImp<double>();
+    std::cout << "Testing TinySVD algorithms in double precision..."
+              << std::endl;
+    testTinySVDImp<double> ();
 }

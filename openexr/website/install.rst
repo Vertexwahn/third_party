@@ -36,6 +36,12 @@ Beware that some distributions are out of date and only provide
 distributions of outdated releases OpenEXR. We recommend against using
 OpenEXR v2, and we *strongly* recommend against using OpenEXR v1.
 
+Refer to the current version of OpenEXR on various major Linux distros at
+`repology.org <https://repology.org/project/openexr/versions>`_:
+
+.. image:: https://repology.org/badge/vertical-allrepos/openexr.svg?exclude_unsupported=1&columns=4
+   :target: https://repology.org/project/openexr/versions
+
 macOS
 -----
 
@@ -81,7 +87,7 @@ Prerequisites
 
 Make sure these are installed on your system before building OpenEXR:
 
-* OpenEXR requires CMake version 3.12 or newer
+* OpenEXR requires CMake version 3.14 or newer
 * C++ compiler that supports C++11
 * Imath (auto fetched by CMake if not found) (https://github.com/AcademySoftwareFoundation/openexr)
 * libdeflate source code (auto fetched by CMake if not found) (https://github.com/ebiggers/libdeflate)
@@ -454,9 +460,9 @@ Component Options
   Install the binary programs (exrheader, exrinfo,
   exrmakepreview, etc). Default is ``ON``.
   
-* ``OPENEXR_INSTALL_EXAMPLES``
+* ``OPENEXR_BUILD_EXAMPLES``
 
-  Build and install the example code. Default is ``ON``.
+  Build the example code. Default is ``ON``.
 
 Additional CMake Options
 ~~~~~~~~~~~~~~~~~~~~~~~~

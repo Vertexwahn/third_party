@@ -7,6 +7,7 @@
 #    undef NDEBUG
 #endif
 
+#include "testExtractSHRT.h"
 #include <ImathEuler.h>
 #include <ImathFun.h>
 #include <ImathMatrixAlgo.h>
@@ -15,7 +16,6 @@
 #include <exception>
 #include <iostream>
 #include <stdio.h>
-#include "testExtractSHRT.h"
 
 #if 0
 #    define debug(x) (printf x, fflush (stdout))
@@ -43,7 +43,7 @@ testMatrix (const M33f M)
     // angle back to a matrix, N.
     //
 
-    V2f s (0.f), t (0.f);
+    V2f   s (0.f), t (0.f);
     float h, r = 0.f;
 
     if (!extractSHRT (M, s, h, r, t, true))
@@ -54,10 +54,10 @@ testMatrix (const M33f M)
 
     M33f N;
 
-    N *= M33f().setScale (s);
-    N *= M33f().setShear (h);
-    N *= M33f().setRotation (r);
-    N *= M33f().setTranslation (t);
+    N *= M33f ().setScale (s);
+    N *= M33f ().setShear (h);
+    N *= M33f ().setRotation (r);
+    N *= M33f ().setTranslation (t);
 
     debug (("Re-scale: %f %f\n", s[0], s[1]));
     debug (("Re-shear: %f\n", h));
@@ -94,7 +94,7 @@ testMatrix (const M33f M)
 }
 
 void
-testRandomAngles33()
+testRandomAngles33 ()
 {
     Rand48 random (0);
 
@@ -112,10 +112,9 @@ testRandomAngles33()
                float(random.nextf (0.000001, 2.0)));
 
         for (int j = 0; j < 2; j++)
-            if (random.nextf (0.0, 1.0) >= 0.5)
-                s[j] *= -1;
+            if (random.nextf (0.0, 1.0) >= 0.5) s[j] *= -1;
 
-        M *= M33f().setScale (s);
+        M *= M33f ().setScale (s);
 
         //
         // Shear M.
@@ -124,7 +123,7 @@ testRandomAngles33()
         float h = float(random.nextf (0.000001, 2.));
         if (random.nextf (0.0, 1.0) >= 0.5) h *= -1;
 
-        M *= M33f().setShear (h);
+        M *= M33f ().setShear (h);
 
         //
         // Rotate M.
@@ -132,7 +131,7 @@ testRandomAngles33()
 
         float r = rad (float(random.nextf (-180, 180)));
 
-        M *= M33f().setRotation (r);
+        M *= M33f ().setRotation (r);
 
         //
         // Translate M.
@@ -141,7 +140,7 @@ testRandomAngles33()
         V2f t (float(random.nextf (-10, 10)),
                float(random.nextf (-10, 10)));
 
-        M *= M33f().setTranslation (t);
+        M *= M33f ().setTranslation (t);
 
         //
         // Add a small random error to the elements of M
@@ -255,7 +254,7 @@ testMatrix (const M44f M)
 }
 
 void
-testRandomAngles44()
+testRandomAngles44 ()
 {
     Rand48 random (0);
 
@@ -297,8 +296,7 @@ testRandomAngles44()
             float(random.nextf (0.000001, 2.0)));
 
         for (int j = 0; j < 3; j++)
-            if (random.nextf (0.0, 1.0) >= 0.5)
-                h[j] *= -1;
+            if (random.nextf (0.0, 1.0) >= 0.5) h[j] *= -1;
 
         M.shear (h);
 
@@ -312,8 +310,7 @@ testRandomAngles44()
             float(random.nextf (0.000001, 2.0)));
 
         for (int j = 0; j < 3; j++)
-            if (random.nextf (0.0, 1.0) >= 0.5)
-                s[j] *= -1;
+            if (random.nextf (0.0, 1.0) >= 0.5) s[j] *= -1;
 
         M.scale (s);
 
@@ -347,7 +344,7 @@ testAngles44 (V3f angles)
 {
     Eulerf e (rad (angles.x), rad (angles.y), rad (angles.z));
 
-    M44f M (e.toMatrix44());
+    M44f M (e.toMatrix44 ());
 
     //
     // With rounding errors from e.toMatrix.
@@ -373,15 +370,15 @@ testAngles44 (V3f angles)
 }
 
 void
-test()
+test ()
 {
     cout << "  random angles" << endl;
 
     cout << "    3x3" << endl;
-    testRandomAngles33();
+    testRandomAngles33 ();
 
     cout << "    4x4" << endl;
-    testRandomAngles44();
+    testRandomAngles44 ();
 
     cout << "  special angles" << endl;
 
@@ -399,7 +396,7 @@ test()
 } // namespace
 
 void
-testExtractSHRT()
+testExtractSHRT ()
 {
     try
     {
@@ -407,12 +404,12 @@ testExtractSHRT()
              << "from matrices" << endl;
 
         cout << "Imath::extractSHRT()" << endl;
-        test();
+        test ();
 
         cout << "ok\n" << endl;
     }
     catch (std::exception& e)
     {
-        cerr << "  Caught exception: " << e.what() << endl;
+        cerr << "  Caught exception: " << e.what () << endl;
     }
 }

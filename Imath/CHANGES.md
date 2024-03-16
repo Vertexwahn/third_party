@@ -3,8 +3,6 @@
 
 # Imath Release Notes
 
-* [Version 3.1.11](#version-3111-February-28-2024) February 28, 2024
-* [Version 3.1.10](#version-3110-January-26-2024) January 26, 2024
 * [Version 3.1.9](#version-319-May-31-2023) May 31, 2023
 * [Version 3.1.8](#version-318-May-22-2023) May 22, 2023
 * [Version 3.1.7](#version-317-March-1-2023) March 1, 2023
@@ -22,114 +20,6 @@
 * [Version 3.0.1-beta](#version-301-beta-march-28-2021) March 28, 2021
 * [Version 3.0.0-beta](#version-300-beta-march-15-2021) March 15, 2021
 * [Inherited History from OpenEXR](#inherited-history-from-openexr)
-
-## Version 3.1.11 (February 28, 2024)
-
-Patch release with small build fix:
-
-- Add explicit `std::` namespace for `isfinite` in `ImathFun.cpp`
-
-This release also introduces the practice of signing release artifacts
-via [sigstore](https://www.sigstore.dev).
-
-### Merged Pull Requests
-* \[[#371](https://github.com/AcademySoftwareFoundation/Imath/pull/371)\]
-ImathFun.cpp: add std:: to isfinite in remaining cases (#371)
-* \[[#369](https://github.com/AcademySoftwareFoundation/Imath/pull/369)\]
-Add workflow to sign release artifacts with Sigstore 
-* \[[#368](https://github.com/AcademySoftwareFoundation/Imath/pull/368)\]
-Add std:: to isfinite in ImathFun.cpp 
-
-## Version 3.1.10 (January 26, 2024)
-
-Patch release with various build/bug fixes.
-
-Build fixes:
-
-  - Fix a problem where downstream projects using Imath would build
-    python bindings even if they weren't requested.
-  - Fix for missing `std::bit_cast`
-  - Fix missing/necessary use of IMATH_HOSTDEVICE 
-  - IMATH_INSTALL_PKG_CONFIG is now on by default, even on Windows 
-  - Fix calling default constructor by uniform init in TypeTraits
-  - Fix redundant PYIMATH_EXPORTS causing compile issues on Windows Clang 
-  - Update to SO versioning policy: 
-
-    This change adopts a policy of appending the ``MAJOR.MINOR.PATCH``
-    software release name to the ``SONAME`` to form the real name of the
-    shared library.
-
-    See [website/install.rst](website/install.rst) and [PR
-    #339](https://github.com/AcademySoftwareFoundation/openexr/pull/339)
-    for more details.
-
-Bug fixes:
-
-  - Fix half to float giving wrong results on older x86_64 CPUs on Windows 
-
-Other changes:
-
-  - succ()/pred() now use std::nextafter(). 
-  - Expand epsilon bounds for m44x pyImath test. 
-  - Rename "docs" to "website". 
-  - Add missing copyright/license identifiers. 
-
-### Merged Pull Requests
-
-* \[[#363](https://github.com/AcademySoftwareFoundation/Imath/pull/363)\]
-Update install instructions to reflect new SO versioning policy
-
-* \[[#362](https://github.com/AcademySoftwareFoundation/Imath/pull/362)\]
-Require sphinx 5.0 
-
-* \[[#361](https://github.com/AcademySoftwareFoundation/Imath/pull/361)\]
-src/python/config/ModuleDefine.cmake: do not install a cmake file exporting targets for dependent projects 
-
-* \[[#358](https://github.com/AcademySoftwareFoundation/Imath/pull/358)\]
-Fix half to float giving wrong results on older x86_64 CPUs on Windows 
-
-* \[[#353](https://github.com/AcademySoftwareFoundation/Imath/pull/353)\]
-Changed implementation of succ and pred to use std::nextafter. 
-
-* \[[#350](https://github.com/AcademySoftwareFoundation/Imath/pull/350)\]
-Fix check for the availability of std::bit_cast 
-
-* \[[#349](https://github.com/AcademySoftwareFoundation/Imath/pull/349)\]
-IMATH_INSTALL_PKG_CONFIG is on by default, even on Windows 
-
-* \[[#347](https://github.com/AcademySoftwareFoundation/Imath/pull/347)\]
-Export Imath from the build tree and so on. 
-
-* \[[#344](https://github.com/AcademySoftwareFoundation/Imath/pull/344)\]
-rm unnecessary IMATH_HOSTDEVICE attributes. 
-
-* \[[#342](https://github.com/AcademySoftwareFoundation/Imath/pull/342)\]
-Add missing copyright/license identifiers 
-
-* \[[#341](https://github.com/AcademySoftwareFoundation/Imath/pull/341)\]
-Remove unnecessary files 
-
-* \[[#340](https://github.com/AcademySoftwareFoundation/Imath/pull/340)\]
-Fix calling default constructor by uniform init. 
-
-* \[[#339](https://github.com/AcademySoftwareFoundation/Imath/pull/339)\]
-Update and simply SO versioning policy 
-
-* \[[#338](https://github.com/AcademySoftwareFoundation/Imath/pull/338)\]
-Rename "docs" to "website" 
-
-* \[[#333](https://github.com/AcademySoftwareFoundation/Imath/pull/333)\]
-Expand epsilon bounds for m44x pyImath test 
-
-* \[[#331](https://github.com/AcademySoftwareFoundation/Imath/pull/331)\]
-Fixed redundant PYIMATH_EXPORTS causing compile issues on Windows Clang 
-
-* \[[#326](https://github.com/AcademySoftwareFoundation/Imath/pull/326)\]
-Use security@openexr.com for consistency 
-
-* \[[#320](https://github.com/AcademySoftwareFoundation/Imath/pull/320)\]
-Add missing IMATH_HOSTDEVICE to Matrix33<T>::invert(bool) 
-
 
 ## Version 3.1.9 (May 31, 2023)
 

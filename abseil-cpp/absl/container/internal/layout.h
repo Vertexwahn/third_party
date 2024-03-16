@@ -171,6 +171,7 @@
 #include <typeinfo>
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/debugging/internal/demangle.h"
 #include "absl/meta/type_traits.h"
@@ -504,9 +505,7 @@ class LayoutImpl<std::tuple<Elements...>, absl::index_sequence<SizeSeq...>,
   // Note: We're not using ElementType alias here because it does not compile
   // under MSVC.
   template <class Char>
-  std::tuple<CopyConst<
-      Char, typename std::tuple_element<OffsetSeq, ElementTypes>::type>*...>
-  Pointers(Char* p) const {
+  auto Pointers(Char* p) const {
     return std::tuple<CopyConst<Char, ElementType<OffsetSeq>>*...>(
         Pointer<OffsetSeq>(p)...);
   }
@@ -561,13 +560,11 @@ class LayoutImpl<std::tuple<Elements...>, absl::index_sequence<SizeSeq...>,
   //
   // Note: We're not using ElementType alias here because it does not compile
   // under MSVC.
+  //
+  // Note: We mark the parameter as unused because GCC detects it is not used
+  // when `SizeSeq` is empty [-Werror=unused-but-set-parameter].
   template <class Char>
-  std::tuple<SliceType<CopyConst<
-      Char, typename std::tuple_element<SizeSeq, ElementTypes>::type>>...>
-  Slices(Char* p) const {
-    // Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63875 (fixed
-    // in 6.1).
-    (void)p;
+  auto Slices(ABSL_ATTRIBUTE_UNUSED Char* p) const {
     return std::tuple<SliceType<CopyConst<Char, ElementType<SizeSeq>>>...>(
         Slice<SizeSeq>(p)...);
   }
@@ -706,7 +703,7 @@ class Layout : public internal_layout::LayoutType<sizeof...(Ts), Ts...> {
   template <class... Sizes>
   static constexpr PartialType<sizeof...(Sizes)> Partial(Sizes&&... sizes) {
     static_assert(sizeof...(Sizes) <= sizeof...(Ts), "");
-    return PartialType<sizeof...(Sizes)>(absl::forward<Sizes>(sizes)...);
+    return PartialType<sizeof...(Sizes)>(std::forward<Sizes>(sizes)...);
   }
 
   // Creates a layout with the sizes of all arrays specified. If you know

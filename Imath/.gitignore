@@ -4,7 +4,3 @@
 build/
 _build/
 _install/
-
-# Ignore Bazel files and directories
-bazel*
-MODULE.bazel.lock

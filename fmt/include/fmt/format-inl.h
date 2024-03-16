@@ -18,7 +18,7 @@
 #  include <locale>
 #endif
 
-#if defined(_WIN32) && !defined(FMT_WINDOWS_NO_WCHAR)
+#if defined(_WIN32) && !defined(FMT_USE_WRITE_CONSOLE)
 #  include <io.h>  // _isatty
 #endif
 
@@ -1639,7 +1639,7 @@ class file_print_buffer : public buffer<char> {
   }
 };
 
-#if !defined(_WIN32) || defined(FMT_WINDOWS_NO_WCHAR)
+#if !defined(_WIN32) || defined(FMT_USE_WRITE_CONSOLE)
 FMT_FUNC auto write_console(int, string_view) -> bool { return false; }
 #else
 using dword = conditional_t<sizeof(long) == 4, unsigned long, unsigned>;
@@ -1665,7 +1665,7 @@ FMT_FUNC void vprint_mojibake(std::FILE* f, string_view fmt, format_args args,
 #endif
 
 FMT_FUNC void print(std::FILE* f, string_view text) {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(FMT_USE_WRITE_CONSOLE)
   int fd = _fileno(f);
   if (_isatty(fd)) {
     std::fflush(f);
@@ -1677,13 +1677,15 @@ FMT_FUNC void print(std::FILE* f, string_view text) {
 }  // namespace detail
 
 FMT_FUNC void vprint(std::FILE* f, string_view fmt, format_args args) {
-  if (detail::file_ref(f).is_buffered()) {
-    auto&& buffer = detail::file_print_buffer(f);
-    return detail::vformat_to(buffer, fmt, args);
-  }
   auto buffer = memory_buffer();
   detail::vformat_to(buffer, fmt, args);
   detail::print(f, {buffer.data(), buffer.size()});
+}
+
+FMT_FUNC void vprint_locked(std::FILE* f, string_view fmt, format_args args) {
+  if (!detail::file_ref(f).is_buffered()) return vprint(f, fmt, args);
+  auto&& buffer = detail::file_print_buffer(f);
+  return detail::vformat_to(buffer, fmt, args);
 }
 
 FMT_FUNC void vprintln(std::FILE* f, string_view fmt, format_args args) {

@@ -10,12 +10,12 @@
 #include <ImathBoxAlgo.h>
 #include <ImathRandom.h>
 
+#include "testBoxAlgo.h"
 #include <algorithm>
 #include <assert.h>
 #include <iostream>
 #include <typeinfo>
 #include <vector>
-#include "testBoxAlgo.h"
 
 // Include ImathForward *after* other headers to validate forward declarations
 #include <ImathForward.h>
@@ -37,7 +37,7 @@ static void
 addItem (const std::vector<int>& value, std::vector<T>& perms)
 {
     T p;
-    for (unsigned int i = 0; i < value.size(); i++)
+    for (unsigned int i = 0; i < value.size (); i++)
     {
         p[i] = static_cast<typename T::BaseType>(value[i]);
     }
@@ -55,8 +55,7 @@ visit (int& level, int n, int k, std::vector<int>& value, std::vector<T>& perms)
         addItem (value, perms);
     else
         for (int i = 0; i < n; i++)
-            if (value[i] == 0)
-                visit (level, n, i, value, perms);
+            if (value[i] == 0) visit (level, n, i, value, perms);
 
     level    = level - 1;
     value[k] = 0;
@@ -66,9 +65,9 @@ template <class T>
 static void
 permutations (std::vector<T>& perms)
 {
-    std::vector<int> value (T::dimensions());
-    int level = -1;
-    int n     = T::dimensions();
+    std::vector<int> value (T::dimensions ());
+    int              level = -1;
+    int              n     = T::dimensions ();
 
     visit (level, n, 0, value, perms);
 }
@@ -84,7 +83,9 @@ testConstructors (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        assert (b.min == T (T::baseTypeMax()) && b.max == T (T::baseTypeLowest()));
+        assert (
+            b.min == T (T::baseTypeMax ()) &&
+            b.max == T (T::baseTypeLowest ()));
     }
 
     //
@@ -105,7 +106,7 @@ testConstructors (const char* type)
     {
         T p0;
         T p1;
-        for (unsigned int i = 0; i < T::dimensions(); i++)
+        for (unsigned int i = 0; i < T::dimensions (); i++)
         {
             p0[i] = static_cast<typename T::BaseType>(i);
             p1[i] = static_cast<typename T::BaseType>(10 * T::dimensions () - i - 1);
@@ -127,8 +128,10 @@ testMakeEmpty (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        b.makeEmpty();
-        assert (b.min == T (T::baseTypeMax()) && b.max == T (T::baseTypeLowest()));
+        b.makeEmpty ();
+        assert (
+            b.min == T (T::baseTypeMax ()) &&
+            b.max == T (T::baseTypeLowest ()));
     }
 
     //
@@ -136,8 +139,10 @@ testMakeEmpty (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b (T (-1), T (1));
-        b.makeEmpty();
-        assert (b.min == T (T::baseTypeMax()) && b.max == T (T::baseTypeLowest()));
+        b.makeEmpty ();
+        assert (
+            b.min == T (T::baseTypeMax ()) &&
+            b.max == T (T::baseTypeLowest ()));
     }
 
     //
@@ -150,11 +155,13 @@ testMakeEmpty (const char* type)
     {
         T min (0);
         T max (0);
-        max[T::dimensions() - 1] = 1;
+        max[T::dimensions () - 1] = 1;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b (min, max);
-        b.makeEmpty();
-        assert (b.min == T (T::baseTypeMax()) && b.max == T (T::baseTypeLowest()));
+        b.makeEmpty ();
+        assert (
+            b.min == T (T::baseTypeMax ()) &&
+            b.max == T (T::baseTypeLowest ()));
     }
 }
 
@@ -191,8 +198,10 @@ testMakeInfinite (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b (T (-1), T (1));
-        b.makeInfinite();
-        assert (b.min == T (T::baseTypeLowest()) && b.max == T (T::baseTypeMax()));
+        b.makeInfinite ();
+        assert (
+            b.min == T (T::baseTypeLowest ()) &&
+            b.max == T (T::baseTypeMax ()));
     }
 
     //
@@ -205,11 +214,13 @@ testMakeInfinite (const char* type)
     {
         T min (0);
         T max (0);
-        max[T::dimensions() - 1] = 1;
+        max[T::dimensions () - 1] = 1;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b (min, max);
-        b.makeInfinite();
-        assert (b.min == T (T::baseTypeLowest()) && b.max == T (T::baseTypeMax()));
+        b.makeInfinite ();
+        assert (
+            b.min == T (T::baseTypeLowest ()) &&
+            b.max == T (T::baseTypeMax ()));
     }
 }
 
@@ -229,7 +240,7 @@ testExtendByPoint (const char* type)
     for (unsigned int i = 0; i < iters; i++)
     {
         T p;
-        for (unsigned int j = 0; j < T::dimensions(); j++)
+        for (unsigned int j = 0; j < T::dimensions (); j++)
             p[j] = typename T::BaseType (rand.nextf (-12345, 12345));
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
@@ -251,7 +262,7 @@ testExtendByPoint (const char* type)
         for (unsigned int j = 0; j < i; j++)
         {
             T p;
-            for (unsigned int k = 0; k < T::dimensions(); k++)
+            for (unsigned int k = 0; k < T::dimensions (); k++)
                 p[k] = typename T::BaseType (rand.nextf (-12345, 12345));
 
             if (j == 0)
@@ -259,7 +270,7 @@ testExtendByPoint (const char* type)
                 min = p;
                 max = p;
             }
-            for (unsigned int k = 0; k < T::dimensions(); k++)
+            for (unsigned int k = 0; k < T::dimensions (); k++)
             {
                 min[k] = std::min (min[k], p[k]);
                 max[k] = std::max (max[k], p[k]);
@@ -283,8 +294,10 @@ testExtendByBox (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        b.extendBy (IMATH_INTERNAL_NAMESPACE::Box<T>());
-        assert (b.min == T (T::baseTypeMax()) && b.max == T (T::baseTypeLowest()));
+        b.extendBy (IMATH_INTERNAL_NAMESPACE::Box<T> ());
+        assert (
+            b.min == T (T::baseTypeMax ()) &&
+            b.max == T (T::baseTypeLowest ()));
     }
 
     //
@@ -294,9 +307,9 @@ testExtendByBox (const char* type)
         std::vector<T> perms;
         permutations (perms);
 
-        for (unsigned int i = 0; i < perms.size(); i++)
+        for (unsigned int i = 0; i < perms.size (); i++)
         {
-            for (unsigned int j = 0; j < perms.size(); j++)
+            for (unsigned int j = 0; j < perms.size (); j++)
             {
                 T p0 = -perms[i];
                 T p1 = perms[j];
@@ -306,7 +319,7 @@ testExtendByBox (const char* type)
                 assert (b0.min == p0 && b0.max == p1);
 
                 IMATH_INTERNAL_NAMESPACE::Box<T> b1 (p0, p1);
-                b1.extendBy (IMATH_INTERNAL_NAMESPACE::Box<T>());
+                b1.extendBy (IMATH_INTERNAL_NAMESPACE::Box<T> ());
                 assert (b1.min == p0 && b1.max == p1);
             }
         }
@@ -316,7 +329,7 @@ testExtendByBox (const char* type)
     // Extend non-empty box with non-empty box. Starts with empty, then builds.
     //
     IMATH_INTERNAL_NAMESPACE::Rand32 rand (0);
-    const unsigned int iters = 10;
+    const unsigned int               iters = 10;
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
 
@@ -326,7 +339,7 @@ testExtendByBox (const char* type)
         {
             T p0;
             T p1;
-            for (unsigned int k = 0; k < T::dimensions(); k++)
+            for (unsigned int k = 0; k < T::dimensions (); k++)
             {
                 p0[k] = typename T::BaseType (rand.nextf (0, 999));
                 p1[k] = typename T::BaseType (rand.nextf (1000, 1999));
@@ -334,7 +347,7 @@ testExtendByBox (const char* type)
 
             min = b.min;
             max = b.max;
-            for (unsigned int k = 0; k < T::dimensions(); k++)
+            for (unsigned int k = 0; k < T::dimensions (); k++)
             {
                 min[k] = std::min (min[k], p0[k]);
                 max[k] = std::max (max[k], p1[k]);
@@ -372,9 +385,9 @@ testComparators (const char* type)
         std::vector<T> perms;
         permutations (perms);
 
-        for (unsigned int i = 0; i < perms.size(); i++)
+        for (unsigned int i = 0; i < perms.size (); i++)
         {
-            for (unsigned int j = 0; j < perms.size(); j++)
+            for (unsigned int j = 0; j < perms.size (); j++)
             {
                 T p0 = -perms[i];
                 T p1 = perms[j];
@@ -394,9 +407,9 @@ testComparators (const char* type)
         std::vector<T> perms;
         permutations (perms);
 
-        for (unsigned int i = 0; i < perms.size(); i++)
+        for (unsigned int i = 0; i < perms.size (); i++)
         {
-            for (unsigned int j = 0; j < perms.size(); j++)
+            for (unsigned int j = 0; j < perms.size (); j++)
             {
                 T p0 = -perms[i];
                 T p1 = perms[j];
@@ -438,7 +451,7 @@ testIntersects (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        T p (1);
+        T                                p (1);
 
         assert (!b.intersects (p));
     }
@@ -448,9 +461,9 @@ testIntersects (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b (T (-1), T (1));
-        T p0 (0);
-        T p1 (5);
-        T p2 (-5);
+        T                                p0 (0);
+        T                                p1 (5);
+        T                                p2 (-5);
 
         assert (b.intersects (p0));
         assert (!b.intersects (p1));
@@ -466,11 +479,11 @@ testIntersects (const char* type)
     //
     {
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 1;
+        T max                     = min;
+        max[T::dimensions () - 1] = 1;
 
-        T p0 (0);
-        T p1 (5);
+        T                                p0 (0);
+        T                                p1 (5);
         IMATH_INTERNAL_NAMESPACE::Box<T> b (min, max);
 
         assert (b.intersects (p0));
@@ -512,8 +525,8 @@ testIntersects (const char* type)
     //
     {
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 1;
+        T max                     = min;
+        max[T::dimensions () - 1] = 1;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b0;
         IMATH_INTERNAL_NAMESPACE::Box<T> b1 (min, max);
@@ -551,8 +564,8 @@ testIntersects (const char* type)
         IMATH_INTERNAL_NAMESPACE::Box<T> b0 (T (-1), T (1));
 
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 1;
+        T max                     = min;
+        max[T::dimensions () - 1] = 1;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b1 (min, max);
         IMATH_INTERNAL_NAMESPACE::Box<T> b2 (min + T (2), max + T (2));
@@ -574,8 +587,8 @@ testIntersects (const char* type)
     //
     {
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 1;
+        T max                     = min;
+        max[T::dimensions () - 1] = 1;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b0 (min, max);
         IMATH_INTERNAL_NAMESPACE::Box<T> b1 (min, max + T (2));
@@ -600,7 +613,7 @@ testSize (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        assert (b.size() == T (0));
+        assert (b.size () == T (0));
     }
 
     //
@@ -618,15 +631,15 @@ testSize (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b0 (T (-1), T (1));
-        assert (b0.size() == T (2));
+        assert (b0.size () == T (2));
 
         T p;
-        for (unsigned int i = 0; i < T::dimensions(); i++)
+        for (unsigned int i = 0; i < T::dimensions (); i++)
         {
             p[i] = static_cast<typename T::BaseType>(i);
         }
         IMATH_INTERNAL_NAMESPACE::Box<T> b1 (-p, p);
-        assert (b1.size() == p * T (2));
+        assert (b1.size () == p * T (2));
     }
 
     //
@@ -638,12 +651,12 @@ testSize (const char* type)
     //
     {
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 1;
+        T max                     = min;
+        max[T::dimensions () - 1] = 1;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b (min, max);
 
-        assert (b.size() == max);
+        assert (b.size () == max);
     }
 }
 
@@ -658,7 +671,7 @@ testCenter (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        assert (b.center() == T (0));
+        assert (b.center () == T (0));
     }
 
     //
@@ -676,11 +689,11 @@ testCenter (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b0 (T (-1), T (1));
-        assert (b0.center() == T (0));
+        assert (b0.center () == T (0));
 
         T p0;
         T p1;
-        for (unsigned int i = 0; i < T::dimensions(); i++)
+        for (unsigned int i = 0; i < T::dimensions (); i++)
         {
             int lo = 1 << (i + 1);
             int hi = 1 << (T::dimensions () - i);
@@ -688,7 +701,7 @@ testCenter (const char* type)
             p1[i] = static_cast<typename T::BaseType>(hi);
         }
         IMATH_INTERNAL_NAMESPACE::Box<T> b1 (p0, p1);
-        assert (b1.center() == (p1 + p0) / 2);
+        assert (b1.center () == (p1 + p0) / 2);
     }
 
     //
@@ -700,12 +713,12 @@ testCenter (const char* type)
     //
     {
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 2;
+        T max                     = min;
+        max[T::dimensions () - 1] = 2;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b (min, max);
 
-        assert (b.center() == max / 2);
+        assert (b.center () == max / 2);
     }
 }
 
@@ -720,7 +733,7 @@ testIsEmpty (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        assert (b.isEmpty());
+        assert (b.isEmpty ());
     }
 
     //
@@ -731,11 +744,11 @@ testIsEmpty (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b0 (T (-1), T (1));
-        assert (!b0.isEmpty());
+        assert (!b0.isEmpty ());
 
         T p0;
         T p1;
-        for (unsigned int i = 0; i < T::dimensions(); i++)
+        for (unsigned int i = 0; i < T::dimensions (); i++)
         {
             int lo = 1 << (i + 1);
             int hi = 1 << (T::dimensions () - i);
@@ -743,7 +756,7 @@ testIsEmpty (const char* type)
             p1[i] = static_cast<typename T::BaseType>(hi);
         }
         IMATH_INTERNAL_NAMESPACE::Box<T> b1 (p0, p1);
-        assert (!b1.isEmpty());
+        assert (!b1.isEmpty ());
     }
 
     //
@@ -755,12 +768,12 @@ testIsEmpty (const char* type)
     //
     {
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 2;
+        T max                     = min;
+        max[T::dimensions () - 1] = 2;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b (min, max);
 
-        assert (!b.isEmpty());
+        assert (!b.isEmpty ());
     }
 }
 
@@ -775,8 +788,8 @@ testIsInfinite (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        b.makeInfinite();
-        assert (b.isInfinite());
+        b.makeInfinite ();
+        assert (b.isInfinite ());
     }
 
     //
@@ -787,11 +800,11 @@ testIsInfinite (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b0 (T (-1), T (1));
-        assert (!b0.isInfinite());
+        assert (!b0.isInfinite ());
 
         T p0;
         T p1;
-        for (unsigned int i = 0; i < T::dimensions(); i++)
+        for (unsigned int i = 0; i < T::dimensions (); i++)
         {
             int lo = 1 << (i + 1);
             int hi = 1 << (T::dimensions () - i);
@@ -799,7 +812,7 @@ testIsInfinite (const char* type)
             p1[i] = static_cast<typename T::BaseType>(hi);
         }
         IMATH_INTERNAL_NAMESPACE::Box<T> b1 (p0, p1);
-        assert (!b1.isInfinite());
+        assert (!b1.isInfinite ());
     }
 
     //
@@ -811,12 +824,12 @@ testIsInfinite (const char* type)
     //
     {
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 2;
+        T max                     = min;
+        max[T::dimensions () - 1] = 2;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b (min, max);
 
-        assert (!b.isInfinite());
+        assert (!b.isInfinite ());
     }
 }
 
@@ -831,7 +844,7 @@ testHasVolume (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        assert (!b.hasVolume());
+        assert (!b.hasVolume ());
     }
 
     //
@@ -839,8 +852,8 @@ testHasVolume (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        b.makeInfinite();
-        assert (b.hasVolume());
+        b.makeInfinite ();
+        assert (b.hasVolume ());
     }
 
     //
@@ -851,11 +864,11 @@ testHasVolume (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b0 (T (-1), T (1));
-        assert (b0.hasVolume());
+        assert (b0.hasVolume ());
 
         T p0;
         T p1;
-        for (unsigned int i = 0; i < T::dimensions(); i++)
+        for (unsigned int i = 0; i < T::dimensions (); i++)
         {
             int lo = 1 << (i + 1);
             int hi = 1 << (T::dimensions () - i);
@@ -863,7 +876,7 @@ testHasVolume (const char* type)
             p1[i] = static_cast<typename T::BaseType>(hi);
         }
         IMATH_INTERNAL_NAMESPACE::Box<T> b1 (p0, p1);
-        assert (b1.hasVolume());
+        assert (b1.hasVolume ());
     }
 
     //
@@ -875,12 +888,12 @@ testHasVolume (const char* type)
     //
     {
         T min (0);
-        T max                    = min;
-        max[T::dimensions() - 1] = 2;
+        T max                     = min;
+        max[T::dimensions () - 1] = 2;
 
         IMATH_INTERNAL_NAMESPACE::Box<T> b (min, max);
 
-        assert (!b.hasVolume());
+        assert (!b.hasVolume ());
     }
 }
 
@@ -895,7 +908,7 @@ testMajorAxis (const char* type)
     //
     {
         IMATH_INTERNAL_NAMESPACE::Box<T> b;
-        assert (b.majorAxis() == 0);
+        assert (b.majorAxis () == 0);
     }
 
     //
@@ -906,17 +919,16 @@ testMajorAxis (const char* type)
         std::vector<T> perms;
         permutations (perms);
 
-        for (unsigned int i = 0; i < perms.size(); i++)
+        for (unsigned int i = 0; i < perms.size (); i++)
         {
             IMATH_INTERNAL_NAMESPACE::Box<T> b (T (0), perms[i]);
 
             unsigned int major = 0;
-            T size             = perms[i] - T (0);
-            for (unsigned int j = 1; j < T::dimensions(); j++)
-                if (size[j] > size[major])
-                    major = j;
+            T            size  = perms[i] - T (0);
+            for (unsigned int j = 1; j < T::dimensions (); j++)
+                if (size[j] > size[major]) major = j;
 
-            assert (b.majorAxis() == major);
+            assert (b.majorAxis () == major);
         }
     }
 
@@ -933,15 +945,15 @@ testMajorAxis (const char* type)
     //    and similarly for 4D
     //
     {
-        for (unsigned int i = 0; i < T::dimensions(); i++)
+        for (unsigned int i = 0; i < T::dimensions (); i++)
         {
-            for (unsigned int j = 0; j < T::dimensions(); j++)
+            for (unsigned int j = 0; j < T::dimensions (); j++)
             {
                 T max (0);
                 max[j] = 1;
 
                 IMATH_INTERNAL_NAMESPACE::Box<T> b (T (0), max);
-                assert (b.majorAxis() == j);
+                assert (b.majorAxis () == j);
             }
         }
     }
@@ -950,7 +962,7 @@ testMajorAxis (const char* type)
 } // anonymous namespace
 
 void
-testBox()
+testBox ()
 {
     cout << "Testing box methods" << endl;
 

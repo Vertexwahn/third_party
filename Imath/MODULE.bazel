@@ -1,6 +1,6 @@
 module(
     name = "imath",
-    version = "3.1.11",
+    version = "head",
     compatibility_level = 1,
 )
 
