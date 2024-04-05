@@ -242,7 +242,8 @@ TEST(util_test, format_system_error) {
     throws_on_alloc = true;
   }
   if (!throws_on_alloc) {
-    fmt::print(stderr, "warning: std::allocator allocates {} chars\n", max_size);
+    fmt::print(stderr, "warning: std::allocator allocates {} chars\n",
+               max_size);
     return;
   }
 }
@@ -1763,24 +1764,24 @@ TEST(format_test, big_print) {
 TEST(format_test, line_buffering) {
   auto pipe = fmt::pipe();
 
+  int write_fd = pipe.write_end.descriptor();
   auto write_end = pipe.write_end.fdopen("w");
   setvbuf(write_end.get(), nullptr, _IOLBF, 4096);
   write_end.print("42\n");
+  close(write_fd);
+  try {
+    write_end.close();
+  } catch (const std::system_error&) {
+  }
 
-  std::mutex mutex;
-  std::condition_variable cv;
   auto read_end = pipe.read_end.fdopen("r");
   std::thread reader([&]() {
     int n = 0;
     int result = fscanf(read_end.get(), "%d", &n);
     (void)result;
     EXPECT_EQ(n, 42);
-    cv.notify_one();
   });
 
-  std::unique_lock<std::mutex> lock(mutex);
-  ASSERT_EQ(cv.wait_for(lock, std::chrono::seconds(1)),
-            std::cv_status::no_timeout);
   reader.join();
 }
 #endif
@@ -1792,15 +1793,14 @@ struct deadlockable {
 
 FMT_BEGIN_NAMESPACE
 template <> struct formatter<deadlockable> {
-  FMT_CONSTEXPR auto parse(fmt::format_parse_context& ctx)
-      -> decltype(ctx.begin()) {
+  FMT_CONSTEXPR auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
     return ctx.begin();
   }
 
-  auto format(const deadlockable& d, fmt::format_context& ctx) const
+  auto format(const deadlockable& d, format_context& ctx) const
       -> decltype(ctx.out()) {
     std::lock_guard<std::mutex> lock(d.mutex);
-    return fmt::format_to(ctx.out(), "{}", d.value);
+    return format_to(ctx.out(), "{}", d.value);
   }
 };
 FMT_END_NAMESPACE
@@ -1837,6 +1837,9 @@ TEST(format_test, bytes) {
 TEST(format_test, group_digits_view) {
   EXPECT_EQ(fmt::format("{}", fmt::group_digits(10000000)), "10,000,000");
   EXPECT_EQ(fmt::format("{:8}", fmt::group_digits(1000)), "   1,000");
+  EXPECT_EQ(fmt::format("{}", fmt::group_digits(-10000000)), "-10,000,000");
+  EXPECT_EQ(fmt::format("{:8}", fmt::group_digits(-1000)), "  -1,000");
+  EXPECT_EQ(fmt::format("{:8}", fmt::group_digits(-100)), "    -100");
 }
 
 #ifdef __cpp_generic_lambdas

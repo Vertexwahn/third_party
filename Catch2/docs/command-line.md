@@ -145,7 +145,7 @@ only tests that match the positive filters are included.
 
 You can also match test names with special characters by escaping them
 with a backslash (`"\"`), e.g. a test named `"Do A, then B"` is matched
-by "Do A\, then B" test spec. Backslash also escapes itself.
+by `"Do A\, then B"` test spec. Backslash also escapes itself.
 
 
 ### Examples
@@ -194,7 +194,8 @@ verbose and human-friendly output.
 
 Reporters are also individually configurable. To pass configuration options
 to the reporter, you append `::key=value` to the reporter specification
-as many times as you want, e.g. `--reporter xml::out=someFile.xml`.
+as many times as you want, e.g. `--reporter xml::out=someFile.xml` or
+`--reporter custom::colour-mode=ansi::Xoption=2`.
 
 The keys must either be prefixed by "X", in which case they are not parsed
 by Catch2 and are only passed down to the reporter, or one of options

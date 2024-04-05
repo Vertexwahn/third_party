@@ -10,6 +10,7 @@
 
 #include <atomic>
 #include <bitset>
+#include <complex>
 #include <cstdlib>
 #include <exception>
 #include <memory>
@@ -148,11 +149,9 @@ template <typename Char> struct formatter<std::filesystem::path, Char> {
   template <typename FormatContext>
   auto format(const std::filesystem::path& p, FormatContext& ctx) const {
     auto specs = specs_;
-#  ifdef _WIN32
-    auto path_string = !path_type_ ? p.native() : p.generic_wstring();
-#  else
-    auto path_string = !path_type_ ? p.native() : p.generic_string();
-#  endif
+    auto path_string =
+        !path_type_ ? p.native()
+                    : p.generic_string<std::filesystem::path::value_type>();
 
     detail::handle_dynamic_spec<detail::width_checker>(specs.width, width_ref_,
                                                        ctx);
@@ -584,6 +583,37 @@ struct formatter<std::atomic_flag, Char> : formatter<bool, Char> {
   }
 };
 #endif  // __cpp_lib_atomic_flag_test
+
+FMT_EXPORT
+template <typename F, typename Char>
+struct formatter<std::complex<F>, Char> : nested_formatter<F, Char> {
+ private:
+  // Functor because C++11 doesn't support generic lambdas.
+  struct writer {
+    const formatter<std::complex<F>, Char>* f;
+    const std::complex<F>& c;
+
+    template <typename OutputIt>
+    FMT_CONSTEXPR auto operator()(OutputIt out) -> OutputIt {
+      if (c.real() != 0) {
+        auto format_full = detail::string_literal<Char, '(', '{', '}', '+', '{',
+                                                  '}', 'i', ')'>{};
+        return fmt::format_to(out, basic_string_view<Char>(format_full),
+                              f->nested(c.real()), f->nested(c.imag()));
+      }
+      auto format_imag = detail::string_literal<Char, '{', '}', 'i'>{};
+      return fmt::format_to(out, basic_string_view<Char>(format_imag),
+                            f->nested(c.imag()));
+    }
+  };
+
+ public:
+  template <typename FormatContext>
+  auto format(const std::complex<F>& c, FormatContext& ctx) const
+      -> decltype(ctx.out()) {
+    return this->write_padded(ctx, writer{this, c});
+  }
+};
 
 FMT_END_NAMESPACE
 #endif  // FMT_STD_H_

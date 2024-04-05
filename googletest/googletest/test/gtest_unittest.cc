@@ -4172,8 +4172,8 @@ TEST(AssertionSyntaxTest, ExceptionAssertionsBehavesLikeSingleStatement) {
 #endif
 TEST(AssertionSyntaxTest, NoFatalFailureAssertionsBehavesLikeSingleStatement) {
   if (AlwaysFalse())
-    EXPECT_NO_FATAL_FAILURE(FAIL()) << "This should never be executed. "
-                                    << "It's a compilation test only.";
+    EXPECT_NO_FATAL_FAILURE(FAIL())
+        << "This should never be executed. " << "It's a compilation test only.";
   else
     ;  // NOLINT
 
@@ -6671,6 +6671,9 @@ TEST(ColoredOutputTest, UsesColorsWhenTermSupportsColors) {
   SetEnv("TERM", "xterm-kitty");      // TERM supports colors.
   EXPECT_TRUE(ShouldUseColor(true));  // Stdout is a TTY.
 
+  SetEnv("TERM", "alacritty");        // TERM supports colors.
+  EXPECT_TRUE(ShouldUseColor(true));  // Stdout is a TTY.
+
   SetEnv("TERM", "xterm-256color");   // TERM supports colors.
   EXPECT_TRUE(ShouldUseColor(true));  // Stdout is a TTY.
 
@@ -6695,7 +6698,7 @@ TEST(ColoredOutputTest, UsesColorsWhenTermSupportsColors) {
   SetEnv("TERM", "linux");            // TERM supports colors.
   EXPECT_TRUE(ShouldUseColor(true));  // Stdout is a TTY.
 
-  SetEnv("TERM", "cygwin");  // TERM supports colors.
+  SetEnv("TERM", "cygwin");           // TERM supports colors.
   EXPECT_TRUE(ShouldUseColor(true));  // Stdout is a TTY.
 #endif  // GTEST_OS_WINDOWS
 }
@@ -7477,22 +7480,6 @@ TEST(NativeArrayTest, WorksForTwoDimensionalArray) {
   NativeArray<char[3]> na(a, 2, RelationToSourceReference());
   ASSERT_EQ(2U, na.size());
   EXPECT_EQ(a, na.begin());
-}
-
-// IndexSequence
-TEST(IndexSequence, MakeIndexSequence) {
-  using testing::internal::IndexSequence;
-  using testing::internal::MakeIndexSequence;
-  EXPECT_TRUE(
-      (std::is_same<IndexSequence<>, MakeIndexSequence<0>::type>::value));
-  EXPECT_TRUE(
-      (std::is_same<IndexSequence<0>, MakeIndexSequence<1>::type>::value));
-  EXPECT_TRUE(
-      (std::is_same<IndexSequence<0, 1>, MakeIndexSequence<2>::type>::value));
-  EXPECT_TRUE((
-      std::is_same<IndexSequence<0, 1, 2>, MakeIndexSequence<3>::type>::value));
-  EXPECT_TRUE(
-      (std::is_base_of<IndexSequence<0, 1, 2>, MakeIndexSequence<3>>::value));
 }
 
 // ElemFromList

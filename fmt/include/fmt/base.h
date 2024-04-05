@@ -175,8 +175,7 @@
 #endif
 
 // Disable [[noreturn]] on MSVC/NVCC because of bogus unreachable code warnings.
-#if FMT_HAS_CPP_ATTRIBUTE(noreturn) && FMT_EXCEPTIONS && !FMT_MSC_VERSION && \
-    !defined(__NVCC__)
+#if FMT_HAS_CPP_ATTRIBUTE(noreturn) && !FMT_MSC_VERSION && !defined(__NVCC__)
 #  define FMT_NORETURN [[noreturn]]
 #else
 #  define FMT_NORETURN
@@ -1505,12 +1504,14 @@ template <typename Context> struct arg_mapper {
     return {};
   }
 
+  // is_fundamental is used to allow formatters for extended FP types.
   template <typename T, typename U = remove_const_t<T>,
-            FMT_ENABLE_IF((std::is_class<U>::value || std::is_enum<U>::value ||
-                           std::is_union<U>::value) &&
-                          !has_to_string_view<U>::value && !is_char<U>::value &&
-                          !is_named_arg<U>::value &&
-                          !std::is_arithmetic<format_as_t<U>>::value)>
+            FMT_ENABLE_IF(
+                (std::is_class<U>::value || std::is_enum<U>::value ||
+                 std::is_union<U>::value || std::is_fundamental<U>::value) &&
+                !has_to_string_view<U>::value && !is_char<U>::value &&
+                !is_named_arg<U>::value && !std::is_integral<U>::value &&
+                !std::is_arithmetic<format_as_t<U>>::value)>
   FMT_MAP_API auto map(T& val) -> decltype(FMT_DECLTYPE_THIS do_map(val)) {
     return do_map(val);
   }
@@ -2752,7 +2753,9 @@ template <typename Char, typename... Args> class format_string_checker {
     return id >= 0 && id < num_args ? parse_funcs_[id](context_) : begin;
   }
 
-  FMT_CONSTEXPR void on_error(const char* message) { report_error(message); }
+  FMT_NORETURN FMT_CONSTEXPR void on_error(const char* message) {
+    report_error(message);
+  }
 };
 
 // A base class for compile-time strings.
@@ -2797,6 +2800,33 @@ FMT_API void vprint_mojibake(FILE*, string_view, format_args, bool = false);
 #ifndef _WIN32
 inline void vprint_mojibake(FILE*, string_view, format_args, bool) {}
 #endif
+
+template <typename T, typename Char, type TYPE> struct native_formatter {
+ private:
+  dynamic_format_specs<Char> specs_;
+
+ public:
+  using nonlocking = void;
+
+  template <typename ParseContext>
+  FMT_CONSTEXPR auto parse(ParseContext& ctx) -> const Char* {
+    if (ctx.begin() == ctx.end() || *ctx.begin() == '}') return ctx.begin();
+    auto end = parse_format_specs(ctx.begin(), ctx.end(), specs_, ctx, TYPE);
+    if (TYPE == type::char_type) check_char_specs(specs_);
+    return end;
+  }
+
+  template <type U = TYPE,
+            FMT_ENABLE_IF(U == type::string_type || U == type::cstring_type ||
+                          U == type::char_type)>
+  FMT_CONSTEXPR void set_debug_format(bool set = true) {
+    specs_.type = set ? presentation_type::debug : presentation_type::none;
+  }
+
+  template <typename FormatContext>
+  FMT_CONSTEXPR auto format(const T& val, FormatContext& ctx) const
+      -> decltype(ctx.out());
+};
 }  // namespace detail
 
 FMT_BEGIN_EXPORT
@@ -2805,34 +2835,8 @@ FMT_BEGIN_EXPORT
 template <typename T, typename Char>
 struct formatter<T, Char,
                  enable_if_t<detail::type_constant<T, Char>::value !=
-                             detail::type::custom_type>> {
- private:
-  detail::dynamic_format_specs<Char> specs_;
-
- public:
-  using nonlocking = void;
-
-  template <typename ParseContext>
-  FMT_CONSTEXPR auto parse(ParseContext& ctx) -> const Char* {
-    if (ctx.begin() == ctx.end() || *ctx.begin() == '}') return ctx.begin();
-    auto type = detail::type_constant<T, Char>::value;
-    auto end =
-        detail::parse_format_specs(ctx.begin(), ctx.end(), specs_, ctx, type);
-    if (type == detail::type::char_type) detail::check_char_specs(specs_);
-    return end;
-  }
-
-  template <detail::type U = detail::type_constant<T, Char>::value,
-            FMT_ENABLE_IF(U == detail::type::string_type ||
-                          U == detail::type::cstring_type ||
-                          U == detail::type::char_type)>
-  FMT_CONSTEXPR void set_debug_format(bool set = true) {
-    specs_.type = set ? presentation_type::debug : presentation_type::none;
-  }
-
-  template <typename FormatContext>
-  FMT_CONSTEXPR auto format(const T& val, FormatContext& ctx) const
-      -> decltype(ctx.out());
+                             detail::type::custom_type>>
+    : detail::native_formatter<T, Char, detail::type_constant<T, Char>::value> {
 };
 
 template <typename Char = char> struct runtime_format_string {
