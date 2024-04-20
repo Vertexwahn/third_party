@@ -188,6 +188,8 @@ int buffered_file::descriptor() const {
 #    undef fileno
 #  endif
   int fd = FMT_POSIX_CALL(fileno(file_));
+#elif defined(_WIN32)
+  int fd = _fileno(file_);
 #else
   int fd = fileno(file_);
 #endif
@@ -379,7 +381,7 @@ file_buffer::file_buffer(cstring_view path, const ostream_params& params)
   set(new char[params.buffer_size], params.buffer_size);
 }
 
-file_buffer::file_buffer(file_buffer&& other)
+file_buffer::file_buffer(file_buffer&& other) noexcept
     : buffer<char>(grow, other.data(), other.size(), other.capacity()),
       file_(std::move(other.file_)) {
   other.clear();
