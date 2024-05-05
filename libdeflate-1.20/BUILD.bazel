@@ -2,7 +2,7 @@
 # Copyright (c) Contributors to the OpenEXR Project.
 
 cc_library(
-    name = "libdeflate",
+    name = "deflate",
     srcs = [
         "common_defs.h",
         "lib/adler32.c",
@@ -41,5 +41,11 @@ cc_library(
         "lib/zlib_decompress.c",
     ],
     hdrs = ["libdeflate.h"],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "libdeflate",
+    actual = ":deflate",
     visibility = ["//visibility:public"],
 )

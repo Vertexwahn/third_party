@@ -89,6 +89,35 @@ TEST(ranges_test, format_map) {
   EXPECT_EQ(fmt::format("{:n}", m), "\"one\": 1, \"two\": 2");
 }
 
+struct test_map_value {};
+
+FMT_BEGIN_NAMESPACE
+template <> struct formatter<test_map_value> : formatter<string_view> {
+  auto format(test_map_value, format_context& ctx) const
+      -> format_context::iterator {
+    return formatter<string_view>::format("foo", ctx);
+  }
+};
+
+template <typename K>
+struct formatter<std::pair<K, test_map_value>> : formatter<string_view> {
+  auto format(std::pair<K, test_map_value>, format_context& ctx) const
+      -> format_context::iterator {
+    return ctx.out();
+  }
+};
+
+template <typename K>
+struct is_tuple_formattable<std::pair<K, test_map_value>, char>
+    : std::false_type {};
+
+FMT_END_NAMESPACE
+
+TEST(ranges_test, format_map_custom_pair) {
+  EXPECT_EQ(fmt::format("{}", std::map<int, test_map_value>{{42, {}}}),
+            "{42: \"foo\"}");
+}
+
 TEST(ranges_test, format_set) {
   EXPECT_EQ(fmt::format("{}", std::set<std::string>{"one", "two"}),
             "{\"one\", \"two\"}");
@@ -462,18 +491,16 @@ TEST(ranges_test, join_range) {
 }
 
 namespace adl {
-struct vec : std::vector<int> {
-  using std::vector<int>::vector;  // inherit all constructors
+struct vec {
+  int n[2] = {42, 43};
 };
 
-// ADL-found begin() and end() skip the first and last element
-auto begin(vec& v) -> typename vec::iterator { return v.begin() + 1; }
-auto end(vec& v) -> typename vec::iterator { return v.end() - 1; }
-}
+auto begin(const vec& v) -> const int* { return v.n; }
+auto end(const vec& v) -> const int* { return v.n + 2; }
+}  // namespace adl
 
 TEST(ranges_test, format_join_adl_begin_end) {
-  auto v = adl::vec{41, 42, 43, 44};
-  EXPECT_EQ(fmt::format("{}", fmt::join(v, "/")), "42/43");
+  EXPECT_EQ(fmt::format("{}", fmt::join(adl::vec(), "/")), "42/43");
 }
 
 #endif  // FMT_RANGES_TEST_ENABLE_JOIN
