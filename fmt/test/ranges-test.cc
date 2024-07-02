@@ -7,6 +7,7 @@
 
 #include "fmt/ranges.h"
 
+#include <array>
 #include <list>
 #include <map>
 #include <numeric>
@@ -16,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#if FMT_HAS_INCLUDE(<ranges>)
+#if FMT_CPLUSPLUS > 201703L && FMT_HAS_INCLUDE(<ranges>)
 #  include <ranges>
 #endif
 
@@ -267,6 +268,33 @@ TEST(ranges_test, disabled_range_formatting_of_path) {
             fmt::range_format::disabled);
 }
 
+struct vector_string : std::vector<char> {
+  using base = std::vector<char>;
+  using base::base;
+};
+struct vector_debug_string : std::vector<char> {
+  using base = std::vector<char>;
+  using base::base;
+};
+FMT_BEGIN_NAMESPACE
+template <>
+struct range_format_kind<vector_string, char>
+    : std::integral_constant<range_format, range_format::string> {};
+template <>
+struct range_format_kind<vector_debug_string, char>
+    : std::integral_constant<range_format, range_format::debug_string> {};
+FMT_END_NAMESPACE
+
+TEST(ranges_test, range_format_string) {
+  const vector_string v{'f', 'o', 'o'};
+  EXPECT_EQ(fmt::format("{}", v), "foo");
+}
+
+TEST(ranges_test, range_format_debug_string) {
+  const vector_debug_string v{'f', 'o', 'o'};
+  EXPECT_EQ(fmt::format("{}", v), "\"foo\"");
+}
+
 // A range that provides non-const only begin()/end() to test fmt::join
 // handles that.
 //
@@ -505,7 +533,7 @@ TEST(ranges_test, format_join_adl_begin_end) {
 
 #endif  // FMT_RANGES_TEST_ENABLE_JOIN
 
-#if defined(__cpp_lib_ranges) && __cpp_lib_ranges >= 202302L
+#if defined(__cpp_lib_ranges) && __cpp_lib_ranges >= 202207L
 TEST(ranges_test, nested_ranges) {
   auto l = std::list{1, 2, 3};
   auto r = std::views::iota(0, 3) | std::views::transform([&l](auto i) {
@@ -530,7 +558,7 @@ TEST(ranges_test, escape) {
   EXPECT_EQ(fmt::format("{}", vec{"\x7f"}), "[\"\\x7f\"]");
   EXPECT_EQ(fmt::format("{}", vec{"n\xcc\x83"}), "[\"n\xcc\x83\"]");
 
-  if (fmt::detail::is_utf8()) {
+  if (fmt::detail::use_utf8()) {
     EXPECT_EQ(fmt::format("{}", vec{"\xcd\xb8"}), "[\"\\u0378\"]");
     // Unassigned Unicode code points.
     EXPECT_EQ(fmt::format("{}", vec{"\xf0\xaa\x9b\x9e"}), "[\"\\U0002a6de\"]");
@@ -654,18 +682,18 @@ TEST(ranges_test, lvalue_qualified_begin_end) {
 }
 
 #if !defined(__cpp_lib_ranges) || __cpp_lib_ranges <= 202106L
-#  define ENABLE_INPUT_RANGE_JOIN_TEST 0
+#  define ENABLE_STD_VIEWS_TESTS 0
 #elif FMT_CLANG_VERSION
 #  if FMT_CLANG_VERSION > 1500
-#    define ENABLE_INPUT_RANGE_JOIN_TEST 1
+#    define ENABLE_STD_VIEWS_TESTS 1
 #  else
-#    define ENABLE_INPUT_RANGE_JOIN_TEST 0
+#    define ENABLE_STD_VIEWS_TESTS 0
 #  endif
 #else
-#  define ENABLE_INPUT_RANGE_JOIN_TEST 1
+#  define ENABLE_STD_VIEWS_TESTS 1
 #endif
 
-#if ENABLE_INPUT_RANGE_JOIN_TEST
+#if ENABLE_STD_VIEWS_TESTS
 TEST(ranges_test, input_range_join) {
   auto iss = std::istringstream("1 2 3 4 5");
   auto view = std::views::istream<std::string>(iss);
@@ -679,6 +707,42 @@ TEST(ranges_test, input_range_join_overload) {
       "1.2.3.4.5",
       fmt::format("{}", fmt::join(std::views::istream<std::string>(iss), ".")));
 }
+
+namespace views_filter_view_test {
+struct codec_mask {
+  static constexpr auto codecs = std::array{0, 1, 2, 3};
+  int except = 0;
+};
+
+auto format_as(codec_mask mask) {
+  // Careful not to capture param by reference here, it will dangle.
+  return codec_mask::codecs |
+         std::views::filter([mask](auto c) { return c != mask.except; });
+}
+}  // namespace views_filter_view_test
+
+TEST(ranges_test, format_as_with_ranges_mutable_begin_end) {
+  using namespace views_filter_view_test;
+  {
+    auto make_filter_view = []() {
+      return codec_mask::codecs |
+             std::views::filter([](auto c) { return c != 2; });
+    };
+    auto r = make_filter_view();
+    EXPECT_EQ("[0, 1, 3]", fmt::format("{}", r));
+    EXPECT_EQ("[0, 1, 3]", fmt::format("{}", make_filter_view()));
+  }
+
+  {
+    auto mask = codec_mask{2};
+    const auto const_mask = codec_mask{2};
+
+    EXPECT_EQ("[0, 1, 3]", fmt::format("{}", mask));
+    EXPECT_EQ("[0, 1, 3]", fmt::format("{}", const_mask));
+    EXPECT_EQ("[0, 1, 3]", fmt::format("{}", codec_mask{2}));
+  }
+}
+
 #endif
 
 TEST(ranges_test, std_istream_iterator_join) {
@@ -705,3 +769,9 @@ TEST(ranges_test, movable_only_istream_iter_join) {
   EXPECT_EQ("1, 2, 3, 4, 5",
             fmt::format("{}", fmt::join(std::move(first), last, ", ")));
 }
+
+struct not_range {
+  void begin() const {}
+  void end() const {}
+};
+static_assert(!fmt::is_formattable<not_range>{}, "");
