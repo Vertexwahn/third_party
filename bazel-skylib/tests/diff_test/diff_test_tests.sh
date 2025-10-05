@@ -60,6 +60,9 @@ function assert_simple_diff_test() {
 
   import_diff_test "$ws"
   touch "$ws/WORKSPACE"
+  cat >"$ws/MODULE.bazel" <<'eof'
+bazel_dep(name = "platforms", version = "0.0.10")
+eof
   mkdir -p "$ws/$subdir"
   cat >"$ws/${subdir}BUILD" <<'eof'
 load("//rules:diff_test.bzl", "diff_test")
@@ -112,7 +115,22 @@ local_repository(
     path = "../ext2",
 )
 eof
-
+  cat >"$ws/main/MODULE.bazel" <<'eof'
+bazel_dep(name = "platforms", version = "0.0.10")
+local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl", "local_repository")
+local_repository(
+    name = "bzl",
+    path = "../bzl",
+)
+local_repository(
+    name = "ext1",
+    path = "../ext1",
+)
+local_repository(
+    name = "ext2",
+    path = "../ext2",
+)
+eof
   # @ext1 has source files
   touch "$ws/ext1/WORKSPACE"
   echo 'exports_files(["foo.txt"])' >"$ws/ext1/foo/BUILD"
@@ -181,17 +199,17 @@ eof
   (cd "$ws/main" && \
    bazel test ${flags} //:different1 --test_output=errors 1>"$TEST_log" 2>&1 \
      && fail "expected failure" || true)
-  expect_log 'FAIL: files "external/ext1/foo/foo.txt" and "external/ext2/foo/bar.txt" differ'
+  expect_log 'FAIL: files "external/.*ext1/foo/foo.txt" and "external/.*ext2/foo/bar.txt" differ'
 
   (cd "$ws/main" && \
    bazel test ${flags} //:different2 --test_output=errors 1>"$TEST_log" 2>&1 \
      && fail "expected failure" || true)
-  expect_log 'FAIL: files "external/ext1/foo/foo.txt" and "ext1/foo/foo.txt" differ'
+  expect_log 'FAIL: files "external/.*ext1/foo/foo.txt" and "ext1/foo/foo.txt" differ'
 
   (cd "$ws/main" && \
    bazel test ${flags} //:different3 --test_output=errors 1>"$TEST_log" 2>&1 \
      && fail "expected failure" || true)
-  expect_log 'FAIL: files "ext2/foo/foo.txt" and "external/ext2/foo/foo.txt" differ'
+  expect_log 'FAIL: files "ext2/foo/foo.txt" and "external/.*ext2/foo/foo.txt" differ'
 }
 
 function test_simple_diff_test_with_legacy_external_runfiles() {
@@ -235,6 +253,9 @@ function test_failure_message() {
 
   import_diff_test "$ws"
   touch "$ws/WORKSPACE"
+  cat >"$ws/MODULE.bazel" <<'eof'
+bazel_dep(name = "platforms", version = "0.0.10")
+eof
   cat >"$ws/BUILD" <<'eof'
 load("//rules:diff_test.bzl", "diff_test")
 

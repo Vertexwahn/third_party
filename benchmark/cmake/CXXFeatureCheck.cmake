@@ -40,7 +40,7 @@ function(cxx_feature_check FILE)
       message(STATUS "Cross-compiling to test ${FEATURE}")
       try_compile(COMPILE_${FEATURE}
               ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${FILE}.cpp
-              CXX_STANDARD 11
+              CXX_STANDARD 17
               CXX_STANDARD_REQUIRED ON
               CMAKE_FLAGS ${FEATURE_CHECK_CMAKE_FLAGS}
               LINK_LIBRARIES ${BENCHMARK_CXX_LIBRARIES}
@@ -56,7 +56,7 @@ function(cxx_feature_check FILE)
       message(STATUS "Compiling and running to test ${FEATURE}")
       try_run(RUN_${FEATURE} COMPILE_${FEATURE}
               ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${FILE}.cpp
-              CXX_STANDARD 11
+              CXX_STANDARD 17
               CXX_STANDARD_REQUIRED ON
               CMAKE_FLAGS ${FEATURE_CHECK_CMAKE_FLAGS}
               LINK_LIBRARIES ${BENCHMARK_CXX_LIBRARIES}
@@ -64,19 +64,19 @@ function(cxx_feature_check FILE)
     endif()
   endif()
 
-  if(RUN_${FEATURE} EQUAL 0)
-    message(STATUS "Performing Test ${FEATURE} -- success")
-    set(HAVE_${VAR} 1 PARENT_SCOPE)
-    add_definitions(-DHAVE_${VAR})
-  else()
-    if(NOT COMPILE_${FEATURE})
-      if(CXXFEATURECHECK_DEBUG)
-        message(STATUS "Performing Test ${FEATURE} -- failed to compile: ${COMPILE_OUTPUT_VAR}")
-      else()
-        message(STATUS "Performing Test ${FEATURE} -- failed to compile")
-      endif()
+  if(COMPILE_${FEATURE})
+    if(DEFINED RUN_${FEATURE} AND RUN_${FEATURE} EQUAL 0)
+      message(STATUS "Performing Test ${FEATURE} -- success")
+      set(HAVE_${VAR} 1 PARENT_SCOPE)
+      add_definitions(-DHAVE_${VAR})
     else()
       message(STATUS "Performing Test ${FEATURE} -- compiled but failed to run")
+    endif()
+  else()
+    if(CXXFEATURECHECK_DEBUG)
+      message(STATUS "Performing Test ${FEATURE} -- failed to compile: ${COMPILE_OUTPUT_VAR}")
+    else()
+      message(STATUS "Performing Test ${FEATURE} -- failed to compile")
     endif()
   endif()
 endfunction()

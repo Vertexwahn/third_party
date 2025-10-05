@@ -69,9 +69,15 @@ build_time_start=$SECONDS
 springboot_rule_tmpdir=${tmpdir:-/tmp}/bazel
 mkdir -p $springboot_rule_tmpdir
 
+# by mistake, this variable got lower cased for a while; it should be upper case but
+# now we should check for either, through 2025
 if [ -z "${debug_springboot_rule}" ]; then
+  if [ -z "${DEBUG_SPRINGBOOT_RULE}" ]; then
     debugfile=/dev/null
-else
+    debug_notset=1
+  fi
+fi
+if [ -z "${debug_notset}" ]; then
     debugdir=$springboot_rule_tmpdir/debug/springboot
     mkdir -p $debugdir
     debugfileName=$packagename-$packagesha
@@ -152,7 +158,10 @@ echo "" >> $debugfile
 # Extract the compiled Boot application classes into BOOT-INF/classes
 #    this must include the application's main class (annotated with @SpringBootApplication)
 cd $working_dir/BOOT-INF/classes
+# Extract all files except META-INF/MANIFEST.MF to avoid duplicate manifest entries
 $jar_command -xf $ruledir/$appjar
+# Remove the extracted MANIFEST.MF to prevent duplicate entries in the final jar
+rm -f META-INF/MANIFEST.MF
 
 # Copy all transitive upstream dependencies into BOOT-INF/lib
 #   The dependencies are passed as arguments to the script, starting at index $first_jar_arg
@@ -168,6 +177,12 @@ while [ "$i" -le "$#" ]; do
   libname=$(basename $lib)
   libdir=$(dirname $lib)
   echo "DEBUG: libname: $libname" >> $debugfile
+  echo "DEBUG: libdir: $libdir" >> $debugfile
+  # Some paths may contain % as a result of Bazel URL encoding the folder name, such as
+  # user@example.com becoming user%40example.com. Such folders fail to load (see Issue #270).
+  # Translate % to _ to avoid this issue.
+  libdir=${libdir//%/_}
+  echo "DEBUG: sanitized libdir: $libdir" >> $debugfile
   if [[ $libname == *jar ]]; then
     # we only want to process .jar files as libs
     if [[ $libname == *spring-boot-loader* ]] || [[ $libname == *spring_boot_loader* ]] || [[ $libname == librootclassloader_lib* ]]; then
@@ -233,13 +248,46 @@ done
 elapsed_trans=$(( $SECONDS - build_time_start ))
 echo "DEBUG: finished copying transitives into BOOT-INF/lib, elapsed time (seconds): $elapsed_trans" >> $debugfile
 
+
+
+# Generate Spring Boot index files for jarmode=tools support
+echo "DEBUG: generating Spring Boot index files" >> $debugfile
+
+# Generate classpath.idx
+echo "DEBUG: generating BOOT-INF/classpath.idx" >> $debugfile
+classpath_idx_file="BOOT-INF/classpath.idx"
+> $classpath_idx_file  # Create empty file
+for jar_path in $boot_inf_lib_jars; do
+  if [[ -f "$jar_path" ]]; then
+    # Clean up double slashes and use the actual jar path as it appears in the jar file
+    clean_jar_path=$(echo "$jar_path" | sed 's|//|/|g')
+    echo "- \"$clean_jar_path\"" >> $classpath_idx_file
+  fi
+done
+
+# Generate layers.idx
+echo "DEBUG: generating BOOT-INF/layers.idx" >> $debugfile
+layers_idx_file="BOOT-INF/layers.idx"
+cat > $layers_idx_file << 'EOF'
+- "dependencies":
+  - "BOOT-INF/lib/"
+- "spring-boot-loader":
+  - "org/"
+- "snapshot-dependencies":
+- "application":
+  - "BOOT-INF/classes/"
+  - "BOOT-INF/classpath.idx"
+  - "BOOT-INF/layers.idx"
+  - "META-INF/"
+EOF
+
 # Inject the Git properties into a properties file in the jar
 # (the -f is needed when remote caching is used, as cached files come down as r-x and
 #  if you rerun the build it needs to overwrite)
 if [[ "$include_git_properties_file" == true ]]; then
   echo "DEBUG: adding git.properties" >> $debugfile
   cat $ruledir/$gitpropsfile >> $debugfile
-  cp -f $ruledir/$gitpropsfile $working_dir/BOOT-INF/classes
+  cp -f $ruledir/$gitpropsfile $working_dir/BOOT-INF/classes/git.properties
 fi
 
 # Inject the classpath index (unless it is the default empty.txt file). Requires Spring Boot version 2.3+
@@ -303,17 +351,25 @@ else
 fi
 cd $working_dir
 
-
-# Use Bazel's singlejar to re-jar it which normalizes timestamps as Jan 1 2010
-# note that it does not use the manifest from the jar file, which is a bummer
-# so we have to respecify the manifest data
-# TODO we should rewrite write_manfiest.sh to produce inputs compatible for singlejar (Issue #27)
-singlejar_options="--normalize --dont_change_compression" # add in --verbose for more details from command
-singlejar_mainclass="--main_class $spring_boot_launcher_class"
-$singlejar_cmd $singlejar_options $singlejar_mainclass \
-    --deploy_manifest_lines "Start-Class: $mainclass" \
-    --sources $raw_output_jar \
-    --output $ruledir/$outputjar 2>&1 | tee -a $debugfile
+(
+    # Use Bazel's singlejar to re-jar it which normalizes timestamps as Jan 1 2010
+    # note that it does not use the manifest from the jar file, which is a bummer
+    # so we have to respecify the manifest data
+    # TODO we should rewrite write_manfiest.sh to produce inputs compatible for singlejar (Issue #27)
+    singlejar_options="--normalize --dont_change_compression" # add in --verbose for more details from command
+    singlejar_mainclass="--main_class $spring_boot_launcher_class"
+    # #205: Execute the singlejar command from the original ruledir, so the build-data.properties file
+    # contains a deterministic, relative path for 'build.target'.
+    cd "$ruledir"
+    $singlejar_cmd $singlejar_options $singlejar_mainclass \
+        --deploy_manifest_lines "Start-Class: $mainclass" \
+        --deploy_manifest_lines "Spring-Boot-Classes: BOOT-INF/classes/" \
+        --deploy_manifest_lines "Spring-Boot-Lib: BOOT-INF/lib/" \
+        --deploy_manifest_lines "Spring-Boot-Classpath-Index: BOOT-INF/classpath.idx" \
+        --deploy_manifest_lines "Spring-Boot-Layers-Index: BOOT-INF/layers.idx" \
+        --sources $raw_output_jar \
+        --output "$outputjar" 2>&1 | tee -a $debugfile
+)
 
 if [ $? -ne 0 ]; then
   echo "ERROR: Failed creating the JAR file $working_dir." | tee -a $debugfile

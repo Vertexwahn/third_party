@@ -1,9 +1,11 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
 licenses(["notice"])
 
 COPTS = [
     "-pedantic",
     "-pedantic-errors",
-    "-std=c++14",
+    "-std=c++17",
     "-Wall",
     "-Wconversion",
     "-Wextra",
@@ -17,28 +19,14 @@ COPTS = [
     "-Werror=old-style-cast",
 ]
 
-config_setting(
-    name = "qnx",
-    constraint_values = ["@platforms//os:qnx"],
-    values = {
-        "cpu": "x64_qnx",
-    },
-    visibility = [":__subpackages__"],
-)
+MSVC_COPTS = [
+    "/std:c++17",
+]
 
 config_setting(
     name = "windows",
     constraint_values = ["@platforms//os:windows"],
-    values = {
-        "cpu": "x64_windows",
-    },
     visibility = [":__subpackages__"],
-)
-
-config_setting(
-    name = "macos",
-    constraint_values = ["@platforms//os:macos"],
-    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -63,7 +51,7 @@ cc_library(
         "include/benchmark/export.h",
     ],
     copts = select({
-        ":windows": [],
+        ":windows": MSVC_COPTS,
         "//conditions:default": COPTS,
     }),
     defines = [

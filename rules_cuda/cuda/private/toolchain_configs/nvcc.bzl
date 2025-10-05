@@ -1,9 +1,9 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", CC_ACTION_NAMES = "ACTION_NAMES")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("//cuda/private:action_names.bzl", "ACTION_NAMES")
 load("//cuda/private:artifact_categories.bzl", "ARTIFACT_CATEGORIES")
 load("//cuda/private:providers.bzl", "CudaToolchainConfigInfo", "CudaToolkitInfo")
-load("//cuda/private:toolchain_configs/utils.bzl", "nvcc_version_ge")
 load("//cuda/private:toolchain.bzl", "use_cpp_toolchain")
 load(
     "//cuda/private:toolchain_config_lib.bzl",
@@ -15,6 +15,7 @@ load(
     "flag_group",
     "flag_set",
 )
+load("//cuda/private:toolchain_configs/utils.bzl", "nvcc_version_ge")
 
 def _impl(ctx):
     artifact_name_patterns = [
@@ -42,13 +43,36 @@ def _impl(ctx):
     ]
 
     cc_toolchain = find_cpp_toolchain(ctx)
+    cc_feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+    host_compiler = cc_common.get_tool_for_action(
+        feature_configuration = cc_feature_configuration,
+        action_name = CC_ACTION_NAMES.cpp_compile,
+    )
+
+    c_compile_variables = cc_common.create_compile_variables(
+        feature_configuration = cc_feature_configuration,
+        cc_toolchain = cc_toolchain,
+    )
+    env = cc_common.get_environment_variables(
+        feature_configuration = cc_feature_configuration,
+        action_name = CC_ACTION_NAMES.cpp_compile,
+        variables = c_compile_variables,
+    )
+
+    # We know we are linux here, so ":" should be save.
+    path = ":".join([env.get("PATH", ""), paths.dirname(host_compiler)])
 
     nvcc_compile_env_feature = feature(
         name = "nvcc_compile_env",
         env_sets = [
             env_set(
                 actions = [ACTION_NAMES.cuda_compile],
-                env_entries = [env_entry("PATH", paths.dirname(cc_toolchain.compiler_executable))],
+                env_entries = [env_entry("PATH", path)],
             ),
         ],
     )
@@ -58,7 +82,7 @@ def _impl(ctx):
         env_sets = [
             env_set(
                 actions = [ACTION_NAMES.device_link],
-                env_entries = [env_entry("PATH", paths.dirname(cc_toolchain.compiler_executable))],
+                env_entries = [env_entry("PATH", path)],
             ),
         ],
     )
@@ -374,6 +398,25 @@ def _impl(ctx):
         provides = ["compilation_mode"],
     )
 
+    sysroot_feature = feature(
+        name = "sysroot",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = [
+                    ACTION_NAMES.cuda_compile,
+                    ACTION_NAMES.device_link,
+                ],
+                flag_groups = [
+                    flag_group(
+                        flags = ["-Xcompiler", "--sysroot=%{sysroot}"],
+                        expand_if_available = "sysroot",
+                    ),
+                ],
+            ),
+        ],
+    )
+
     ptxas_flags_feature = feature(
         name = "ptxas_flags",
         enabled = True,
@@ -490,6 +533,7 @@ def _impl(ctx):
         dbg_feature,
         opt_feature,
         fastbuild_feature,
+        sysroot_feature,
         ptxas_flags_feature,
         compiler_input_flags_feature,
         compiler_output_flags_feature,
@@ -519,4 +563,5 @@ cuda_toolchain_config = rule(
     },
     provides = [CudaToolchainConfigInfo],
     toolchains = use_cpp_toolchain(),
+    fragments = ["cpp"],
 )

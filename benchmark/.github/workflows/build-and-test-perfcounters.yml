@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  CMAKE_GENERATOR: Ninja
+
+permissions:
+  contents: read
+
 jobs:
   job:
     # TODO(dominic): Extend this to include compiler and set through env: CC/CXX.
@@ -14,10 +20,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-20.04]
+        os: [ubuntu-latest]
         build_type: ['Release', 'Debug']
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
     - name: install libpfm
       run: |

@@ -28,15 +28,15 @@ jobs:
           path: ~/.cache/bazel
           key: bazel-${{ matrix.os }}-cuda-${{ matrix.cuda-version }}-${{ hashFiles('.bazelversion') }}
       - name: Install CUDA (Linux)
-        uses: Jimver/cuda-toolkit@v0.2.15
+        uses: Jimver/cuda-toolkit@v0.2.21
         with:
           cuda: ${{ matrix.cuda-version }}
           sub-packages: '["nvcc", "cudart-dev"]'
           method: network
       - name: bazel test //...
         env:
-          # Bazelisk will download bazel to here
-          XDG_CACHE_HOME: ~/.cache/bazel-repo
+          # Bazelisk will download bazel to here, ensure it is cached within tests.
+          XDG_CACHE_HOME: /home/runner/.cache/bazel-repo
         run: bazelisk --bazelrc=.github/workflows/ci.bazelrc --bazelrc=.bazelrc test //...
       - name: Create rules archive
         run: |
@@ -56,7 +56,7 @@ jobs:
           | sed 's/{archive_sha256}/${{ env.ARCHIVE_SHA256 }}/g' \
           > ${{ github.workspace }}/.github/release_notes.txt
       - name: Create the release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         id: rules_cuda_release
         with:
           prerelease: true

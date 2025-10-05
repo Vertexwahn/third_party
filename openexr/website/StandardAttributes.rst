@@ -2,6 +2,8 @@
   SPDX-License-Identifier: BSD-3-Clause
   Copyright Contributors to the OpenEXR Project.
 
+.. _Standard Attributes:
+
 Standard Attributes
 ###################
 
@@ -111,7 +113,7 @@ Basic Attributes
        <p> <tt> <b> screenWindowWidth </b> </tt> </p>
        <p> <i>required</i> </p>
      </td>
-     <td style="vertical-align: top; width:100px"> <tt> V2f </tt> </td>
+     <td style="vertical-align: top; width:100px"> <tt> float </tt> </td>
    </tr>
    <tr>
      <td style="vertical-align: top; width:150px">

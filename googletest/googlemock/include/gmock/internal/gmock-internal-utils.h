@@ -298,7 +298,7 @@ GTEST_API_ void Log(LogSeverity severity, const std::string& message,
 //
 class WithoutMatchers {
  private:
-  WithoutMatchers() {}
+  WithoutMatchers() = default;
   friend GTEST_API_ WithoutMatchers GetWithoutMatchers();
 };
 
@@ -466,11 +466,6 @@ struct Function<R(Args...)> {
   using MakeResultVoid = void(Args...);
   using MakeResultIgnoredValue = IgnoredValue(Args...);
 };
-
-#ifdef GTEST_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
-template <typename R, typename... Args>
-constexpr size_t Function<R(Args...)>::ArgumentCount;
-#endif
 
 // Workaround for MSVC error C2039: 'type': is not a member of 'std'
 // when std::tuple_element is used.

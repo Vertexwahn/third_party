@@ -25,6 +25,7 @@ springboot_deps = [
     "@maven//:org_springframework_boot_spring_boot_starter_jetty",
     "@maven//:org_springframework_boot_spring_boot_starter_web",
     "@maven//:org_springframework_boot_spring_boot_loader_tools",
+    "@maven//:org_springframework_boot_spring_boot_jarmode_tools",
     "@maven//:org_springframework_spring_webmvc",
 
     "@maven//:javax_annotation_javax_annotation_api",
@@ -50,10 +51,16 @@ java_test(
 )
 
 # Build the app as a Spring Boot executable jar
+# To launch: bazel run //examples/helloworld
 springboot(
     name = "helloworld",
     boot_app_class = "com.sample.SampleMain",
     java_library = ":helloworld_lib",
+
+    # SPRING BOOT 3
+    # The launcher class changed in between Boot2 and Boot3, so we provide the
+    # Boot3 launcher class here (the Boot2 one is the default)
+    boot_launcher_class = 'org.springframework.boot.loader.launch.JarLauncher',
 )
 
 springboottest_deps = [

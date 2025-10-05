@@ -1,0 +1,21 @@
+{
+    "name": "@bazel/bazelisk",
+    "description": "A user-friendly launcher for Bazel",
+    "license": "Apache-2.0",
+    "bin": {
+        "bazelisk": "bazelisk.js",
+        "bazel": "bazelisk.js"
+    },
+    "main": "bazelisk.js",
+    "types": "bazelisk.d.ts",
+    "keywords": [
+        "bazel"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bazelbuild/bazelisk.git"
+    },
+    "bugs": {
+        "url": "https://github.com/bazelbuild/bazelisk/issues"
+    }
+}

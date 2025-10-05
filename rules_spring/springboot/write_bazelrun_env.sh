@@ -17,9 +17,7 @@ SPRINGBOOTJAR_FILENAME=${2}
 LABEL_PATH=${3}
 OUTPUTFILE_PATH=${4}
 DO_BACKGROUND=${5}
-ADD_EXPORTS=${6}
-ADD_OPENS=${7}
-FIRST_JVMFLAG_ARG=8
+start_varargs=6
 
 if [ "$LABEL_PATH" == "root" ]; then
     # token that indicates that the target is in the root path, which for the
@@ -27,24 +25,53 @@ if [ "$LABEL_PATH" == "root" ]; then
     LABEL_PATH=""
 fi
 
+# start the output file with the fixed args
+echo "export RULE_NAME=$RULE_NAME" > $OUTPUTFILE_PATH
+echo "export LABEL_PATH=$LABEL_PATH" >> $OUTPUTFILE_PATH
+echo "export SPRINGBOOTJAR_FILENAME=$SPRINGBOOTJAR_FILENAME" >> $OUTPUTFILE_PATH
+echo "export DO_BACKGROUND=$DO_BACKGROUND" >> $OUTPUTFILE_PATH
+
+# start processing of dynamic args, which will appear in this order:
+# zero or more datafiles, zero or more jvm flags, zero or more env variables
+DATAFILES=""
+JVM_FLAGS=""
+jvm_flags_started=0
+envs_started=0
+i=$start_varargs
+while [ "$i" -le "$#" ]; do
+  eval "arg=\${$i}"
+  if [ "$arg" = "start_flags" ]; then
+    jvm_flags_started=1
+  elif [ "$arg" = "start_envs" ]; then
+    envs_started=1
+    jvm_flags_started=0
+  else
+    if [ $jvm_flags_started -eq 1 ]; then
+      JVM_FLAGS="$JVM_FLAGS $arg"
+    elif [ $envs_started -eq 1 ]; then
+      echo "export $arg" >> $OUTPUTFILE_PATH
+    else
+      DATAFILES="${DATAFILES}$arg "
+    fi
+  fi
+  i=$((i + 1))
+done
+
+echo "export DATAFILES=\"$DATAFILES\"" >> $OUTPUTFILE_PATH
+echo "export JVM_FLAGS=\"$JVM_FLAGS\"" >> $OUTPUTFILE_PATH
+
+if [ -f "$LABEL_PATH/application.properties" ]; then
+    echo "export USE_EXTERNAL_CONFIG=true" >> $OUTPUTFILE_PATH
+fi
+
+
+# DEBUG output
 #echo "Generating 'bazel run' env."
 #echo "SPRINGBOOTJAR_FILENAME=$SPRINGBOOTJAR_FILENAME"
 #echo "LABEL_PATH=$LABEL_PATH"
 #echo "OUTPUTFILE_PATH=$OUTPUTFILE_PATH"
 #echo "DO_BACKGROUND=$DO_BACKGROUND"
-
-JVM_FLAGS=""
-i=$FIRST_JVMFLAG_ARG
-while [ "$i" -le "$#" ]; do
-  eval "FLAG=\${$i}"
-  JVM_FLAGS="$JVM_FLAGS $FLAG"
-  i=$((i + 1))
-done
-
-echo "export RULE_NAME=$RULE_NAME" > $OUTPUTFILE_PATH
-echo "export LABEL_PATH=$LABEL_PATH" >> $OUTPUTFILE_PATH
-echo "export SPRINGBOOTJAR_FILENAME=$SPRINGBOOTJAR_FILENAME" >> $OUTPUTFILE_PATH
-echo "export DO_BACKGROUND=$DO_BACKGROUND" >> $OUTPUTFILE_PATH
-echo "export ADD_EXPORTS=$ADD_EXPORTS" >> $OUTPUTFILE_PATH
-echo "export ADD_OPENS=$ADD_OPENS" >> $OUTPUTFILE_PATH
-echo "export JVM_FLAGS=\"$JVM_FLAGS\"" >> $OUTPUTFILE_PATH
+#echo "DATAFILES=$DATAFILES"
+#echo "JVM_FLAGS=$JVM_FLAGS"
+#echo "CURRENT DIR: $(pwd)"
+#echo "LABEL_PATH: $LABEL_PATH"

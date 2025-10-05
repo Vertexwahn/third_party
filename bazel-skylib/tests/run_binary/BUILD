@@ -1,3 +1,4 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("//rules:diff_test.bzl", "diff_test")
 load("//rules:run_binary.bzl", "run_binary")
 load("//rules:write_file.bzl", "write_file")
@@ -76,7 +77,7 @@ write_file(
     # Therefore we can use ".bat" on every platform.
     out = "script.bat",
     content = select({
-        "@bazel_tools//src/conditions:host_windows": [
+        "@platforms//os:windows": [
             "@echo>%OUT% arg1=(%1)",
             "@echo>>%OUT% arg2=(%2)",
             "@echo>>%OUT% ENV_LOCATION=(%ENV_LOCATION%)",

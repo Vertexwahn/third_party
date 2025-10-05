@@ -1,4 +1,4 @@
-## Detecting, Excluding and Suppressing Unwanted Classes
+## Detecting, Excluding and Suppressing Unwanted Classes and Dependencies
 
 Spring Boot jars normally aggregate a great number of dependency jars, many from outside the Bazel
   build (external Maven-built jars).
@@ -37,9 +37,8 @@ It will scan all inner jars file, and fail the build if:
 - the same class (package + classname) is found in more than one inner jar, AND...
 - the MD5 hash of the classfile bytes differ
 
-The dupe class checking feature requires Python3.
+The dupe class checking feature requires Python3, which is included by default in MODULE.bazel.
 If you don't have Python3 available for your build, *dupeclassescheck_enable* must be False.
-See [the Captive Python documentation](../python_interpreter) for more information on how to configure Python3.
 
 *Advanced:* In some cases, you will have a classes that are duplicated and would normally fail this check - but you cannot remove them.
 There is an [ignorelist](#duplicate-class-detection-ignorelist) feature that will ignore specific jars with duplicated classes.
@@ -72,7 +71,13 @@ springboot(
 )
 ```
 
-The list of dependencies is obtained after the *deps_exclude* processing has run.
+The list of dependencies is obtained after the *deps_exclude_labels* and *deps_exclude_paths* processing has run.
+
+### Brute Force Class Listing
+
+In some cases, it can be helpful to get a full catalog of the classes included in all dependency jars for your springboot application.
+The script to do this is located here:
+- [jar exploder utility](../tools/jar_explode)
 
 ## Remediation
 
@@ -84,17 +89,75 @@ This eliminates it from usage for the Spring Boot application.
 Bazel query is the best way to do this:
 
 ```bash
+# find the label of libraries containing the duplicated classes in your java_library
+bazel query 'deps(//examples/helloworld:helloworld_lib)' | grep webmvc
+```
+
+```bash
+# find the path from your java_library to that unwanted library
 bazel query 'somepath(//examples/helloworld:helloworld_lib, "@maven//:org_springframework_spring_webmvc")'
 ```
 
-### Removing Unwanted Classes with an Exclude List
+### Removing Unwanted Classes with a Deps Filter
 
-In some cases you do not have the control to remove the dependency from the dependency graph.
-An exclude list can be passed to the Spring Boot rule which will prevent that dependency from being copied into the jar.
-This is the second best approach for handling unwanted classes.
+The next best way to exclude dependencies is to remove them before they are added to
+  the ```java_library``` rule invocation.
+This mechanism is not specific to ```springboot``` at all - it is provided
+  by rules_spring because it is a commmon use case.
+The benefits to excluding dependencies this way (as opposed to the exclude lists)
+  is that your test execution will use the actual classpath set into
+  the ```springboot``` executable jar.
 
-There are two forms: *deps_exclude* and *deps_exclude_paths*.
-- *deps_exclude* uses Bazel labels to match the desired target to exclude.
+A simple example is below, and there is detailed documentation in the filter directory:
+- [deps_filter documentation](deps_filter_rules/README.md)
+
+In this example, the springboot jar wants the red, green and blue libraries, but
+does not want the yellow library (a transitive).
+```starlark
+#
+load("@rules_spring//springboot/deps_filter_rules:deps_filter.bzl", "deps_filter")
+
+deps = [
+    "@maven//:com_colors_red",
+    "@maven//:com_colors_green",
+    "@maven//:com_colors_blue",
+]
+
+deps_filter(
+    name = "filtered_deps",
+    deps = deps, # input list of deps
+    deps_exclude_labels = [
+        "@maven//:com_colors_yellow", # yellow is a transitive of green, and we don't want it
+    ],
+    exclude_transitives = True, # also exclude any transitive of yellow
+)
+
+java_library(
+    name = "base_lib",
+    deps = [":filtered_deps"], # the filtered deps has yellow removed
+    ...  
+)
+
+springboot(
+    ...
+    java_library = ":base_lib",
+    ...
+)
+```
+
+
+### Removing Unwanted Classes with an Exclude List (deprecated)
+
+An exclude list can be passed to the Spring Boot rule which will prevent that dependency
+  from being copied into the jar during the packaging step.
+This was our original mechanism of removing dependencies from the dependency graph.
+
+:warning: The Exclude list approach is not recommended. The Filter list is more accurate.
+With Exclude lists, your tests will run without the exclusions, such that your test classpath
+will not match what will run with your executable jar.
+
+There are two forms: *deps_exclude_labels* and *deps_exclude_paths*.
+- *deps_exclude_labels* uses Bazel labels to match the desired target to exclude.
 - *deps_exclude_paths* is a partial String match against the file path of the dependency within the jar.
 
 The first one is more elegant and maintainable, as the label will be validated by Bazel.
@@ -106,11 +169,12 @@ The path approach is easier for these cases.
 It is used like this:
 
 ```starlark
+# WARNING: This is an obsolete example. Use the filter mechanism instead.
 springboot(
     name = "helloworld",
     boot_app_class = "com.sample.SampleMain",
     java_library = ":helloworld_lib",
-    deps_exclude = [
+    deps_exclude_labels = [
       "@maven//:com_google_protobuf_protobuf_java",
       "//protos/third-party/google/protobuf:any_java_proto",
     ],
@@ -168,8 +232,7 @@ SampleMain:  Intentional duped class version: Hello LIB2!
 The current implementation of this feature uses the `jar` command line utility.
 Explicit jar entry ordering is implemented by specifying an explicit file list when running `jar`.  
 Very large dependency sets may cause the jar command to exceed the system command line length limit.
-This limitation will be addressed when [Issue 3](https://github.com/salesforce/rules_spring/issues/3) is resolved.
-Until then, if you run into errors, you can disable this feature by setting the attribute `deps_use_starlark_order` to `False`.
+If you run into errors, you can disable this feature by setting the attribute `deps_use_starlark_order` to `False`.
 
 
 #### Classpath Ordering with a Classpath Index
@@ -202,12 +265,10 @@ $ java org.springframework.boot.loader.JarLauncher
 ```
 
 
-### Advanced Use Cases
-
-#### Duplicate Class Detection Ignorelist
+### Ignoring Duplicate Classes
 
 Sometimes you have transitives that are out of your control that bring in duplicate classes.
-If you cannot use the *deps_exclude* attribute as shown above, you would normally be blocked from using the duplicate class checker.
+If you cannot use the exclusion solutions shown above, you would normally be blocked from using the duplicate class checker.
 It would always fail.
 
 For this reason, the duplicate class detection feature supports an *ignorelist*.

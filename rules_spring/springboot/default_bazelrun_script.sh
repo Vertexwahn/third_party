@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2021, salesforce.com, inc.
+# Copyright (c) 2021-2024, salesforce.com, inc.
 # All rights reserved.
 # Licensed under the BSD 3-Clause license.
 # For full license text, see LICENSE.txt file in the repo root  or https://opensource.org/licenses/BSD-3-Clause
@@ -11,10 +11,11 @@ set -e
 # Launcher Script for launching a SpringBoot application with 'bazel run'
 
 # The following environment variables will be set by the springboot rule, and can
-# be reliably used for scripting:
+# be reliably used for scripting (with example values):
 #  RULE_NAME=helloworld
 #  LABEL_PATH=examples/helloworld/
 #  SPRINGBOOTJAR_FILENAME=helloworld.jar
+#  DATAFILES=application.properties
 #  JVM_FLAGS="-Dcustomprop=gold  -DcustomProp2=silver"
 #  DO_BACKGROUND=true/false   (if true, the caller is expecting the launcher not to block and return immediately)
 #
@@ -22,16 +23,21 @@ set -e
 # versions of Bazel because they are documented:
 #  https://docs.bazel.build/versions/master/user-manual.html#run
 
-# Picking the Java VM to run is a bit of an ordeal. We now default to using the
-#   JVM from @bazel_tools//tools/jdk:current_java_toolchain. But you can override that.
-#  1. honor any environmental variable BAZEL_RUN_JAVA (optional)
-#  2. use the java executable from the java toolchain passed into the rule (default)
-#  3. use non-hermetic JAVA_HOME (fallback, we only get here if there is a bug in the above logic)
-#  4. as a last resort, use 'which java'
+current_dir=$(pwd)
+
+# Picking the Java VM to run is a bit of an ordeal. 
+# Precedence order is documented here: 
+#   https://github.com/salesforce/rules_spring/blob/main/springboot/bazelrun.md#launcher-jvm
 
 if [ -f "${BAZEL_RUN_JAVA}" ]; then
+  # BAZEL_RUN_JAVA points to the actual java executable (file), not the java_home directory
   echo "Selected the JVM using the BAZEL_RUN_JAVA environment variable."
   java_cmd=$BAZEL_RUN_JAVA
+elif [ -f "${JAVABIN}" ]; then
+  # JAVABIN points to the actual java executable (file), not the java_home directory
+  # this is java_binary's convention: https://bazel.build/reference/be/java#java_binary
+  echo "Selected the JVM using the JAVABIN environment variable."
+  java_cmd=$JAVABIN
 elif [ -f "$JAVA_TOOLCHAIN" ]; then
   echo "Selected the JVM using the Bazel Java toolchain: $JAVA_TOOLCHAIN_NAME"
   java_cmd=$JAVA_TOOLCHAIN
@@ -51,17 +57,29 @@ echo "Using Java at ${java_cmd}"
 ${java_cmd} -version
 echo ""
 
+# data files, which may include external config files
+if [ ! -z "${DATAFILES}" ]; then
+  configpaths=""
+  echo "Available datafiles:"
+  for datafile in ${DATAFILES}; do
+      echo "  datafile: $current_dir/$datafile"
+      if [[ $datafile == *"application"*".properties" ]]; then
+          path="file:$current_dir/$datafile"
+          if [ ! -z "${configpaths}" ]; then
+            configpaths="$configpaths,"
+          fi
+          configpaths="$configpaths$path"
+      fi
+  done
+  if [ ! -z "${configpaths}" ]; then
+      JVM_FLAGS="${JVM_FLAGS} -Dspring.config.additional-location=$configpaths"
+  fi
+  echo ""
+fi
+
 # java args
 echo "Using JAVA_OPTS from the environment: ${JAVA_OPTS}"
 echo "Using bazelrun_jvm_flags from the BUILD file: ${JVM_FLAGS}"
-
-if [ -f "${ADD_EXPORTS}" ]; then
-  echo "Using ADD_EXPORTS from the environment: ${ADD_EXPORTS}"
-fi
-
-if [ -f "${ADD_OPENS}" ]; then
-  echo "Using ADD_OPENS from the environment: ${ADD_OPENS}"
-fi
 
 # main args
 main_args="$@"
@@ -69,16 +87,22 @@ main_args="$@"
 # spring boot jar; these are replaced by the springboot starlark code:
 path=${LABEL_PATH}
 jar=${SPRINGBOOTJAR_FILENAME}
+jar_path=${path}${jar}
+if [ ! -f $jar_path ]; then
+    # some folks like to hit the bazel run wrapper script directly, which requires us to dig for the jar in bazel-bin
+    # ./bazel-bin/examples/helloworld/helloworld  <= invocation command
+    jar_path="bazel-bin/${path}${jar}"
+fi
 
 # assemble the command
 # use exec so that we can pass signals to the underlying process (https://github.com/salesforce/rules_spring/issues/91)
-cmd="exec ${java_cmd} ${JVM_FLAGS} ${JAVA_OPTS} ${ADD_EXPORTS} ${ADD_OPENS} -jar ${path}${jar} ${main_args}"
+cmd="exec ${java_cmd} ${JVM_FLAGS} ${JAVA_OPTS} -jar ${jar_path} ${main_args}"
 
 echo "Running ${cmd}"
-echo "In directory $(pwd)"
+echo "In directory $current_dir"
 echo ""
 echo "You can also run from the root of the repo:"
-echo "java -jar bazel-bin/${path}${jar}"
+echo "java -jar bazel-bin/${jar_path}"
 echo ""
 
 # DO_BACKGROUND is set to true if the bazelrun_background attribute on the springboot rule is set to True

@@ -4,7 +4,9 @@ module(
     compatibility_level = 1,
 )
 
-bazel_dep(name = "rules_cuda", version = "0.2.1")
+bazel_dep(name = "bazel_skylib", version = "1.4.2")
+bazel_dep(name = "platforms", version = "0.0.6")
+bazel_dep(name = "rules_cuda", version = "0.2.3")
 local_path_override(
     module_name = "rules_cuda",
     path = "..",
@@ -17,4 +19,8 @@ cuda.local_toolchain(
 )
 use_repo(cuda, "local_cuda")
 
-bazel_dep(name = "stardoc", version = "0.6.2")
+bazel_dep(
+    name = "stardoc",
+    version = "0.7.0",
+    repo_name = "io_bazel_stardoc",
+)

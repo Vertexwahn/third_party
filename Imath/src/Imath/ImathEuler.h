@@ -339,6 +339,21 @@ public:
     /// @}
 
     /// @{
+    /// @name Comparison
+
+    /// Equality
+    template <class S>
+    IMATH_HOSTDEVICE constexpr bool
+    operator== (const Euler<S>& other) const IMATH_NOEXCEPT;
+
+    /// Inequality
+    template <class S>
+    IMATH_HOSTDEVICE constexpr bool
+    operator!= (const Euler<S>& other) const IMATH_NOEXCEPT;
+
+    /// @}
+
+    /// @{
     /// @name Utility Methods
     ///
     ///  Utility methods for getting continuous rotations. None of these
@@ -877,18 +892,16 @@ IMATH_HOSTDEVICE Quat<T>
     if (_initialRepeated)
     {
         a[i] = cj * (cs + sc);
-        a[j] = sj * (cc + ss) *
-               parity, // NOSONAR - suppress SonarCloud bug report.
-            a[k] = sj * (cs - sc);
-        q.r      = cj * (cc - ss);
+        a[j] = sj * (cc + ss) * parity;
+        a[k] = sj * (cs - sc);
+        q.r  = cj * (cc - ss);
     }
     else
     {
-        a[i] = cj * sc - sj * cs,
-        a[j] = (cj * ss + sj * cc) *
-               parity, // NOSONAR - suppress SonarCloud bug report.
-            a[k] = cj * cs - sj * sc;
-        q.r      = cj * cc + sj * ss;
+        a[i] = cj * sc - sj * cs;
+        a[j] = (cj * ss + sj * cc) * parity;
+        a[k] = cj * cs - sj * sc;
+        q.r  = cj * cc + sj * ss;
     }
 
     q.v = a;
@@ -966,6 +979,22 @@ Euler<T>::operator= (const Vec3<T>& v) IMATH_NOEXCEPT
 }
 
 template <class T>
+template <class S>
+IMATH_HOSTDEVICE constexpr inline bool
+Euler<T>::operator== (const Euler<S>& other) const IMATH_NOEXCEPT
+{
+    return Vec3<T>::operator==(other) && order() == other.order();
+}
+
+template <class T>
+template <class S>
+IMATH_HOSTDEVICE constexpr inline bool
+Euler<T>::operator!= (const Euler<S>& other) const IMATH_NOEXCEPT
+{
+    return Vec3<T>::operator!=(other) || order() != other.order();
+}
+
+template <class T>
 IMATH_HOSTDEVICE IMATH_CONSTEXPR14 inline float
 Euler<T>::angleMod (T angle) IMATH_NOEXCEPT
 {
@@ -984,9 +1013,9 @@ Euler<T>::simpleXYZRotation (Vec3<T>& xyzRot, const Vec3<T>& targetXyzRot)
     IMATH_NOEXCEPT
 {
     Vec3<T> d = xyzRot - targetXyzRot;
-    xyzRot[0] = targetXyzRot[0] + angleMod (d[0]);
-    xyzRot[1] = targetXyzRot[1] + angleMod (d[1]);
-    xyzRot[2] = targetXyzRot[2] + angleMod (d[2]);
+    xyzRot.x = targetXyzRot.x + angleMod (d.x);
+    xyzRot.y = targetXyzRot.y + angleMod (d.y);
+    xyzRot.z = targetXyzRot.z + angleMod (d.z);
 }
 
 template <class T>
