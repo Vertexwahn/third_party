@@ -10,7 +10,7 @@ cmake_configure_file(
         "CHECK_JPEG_YCBCR_SUBSAMPLING=1",
         "HAVE_ASSERT_H=1",
         "HAVE_FCNTL_H=1",
-        "HAVE_IO_H=1",
+        "HAVE_UNISTD_H=1",
         "HAVE_SETMODE=1",
         "HAVE_SYS_TYPES_H=1",
         "PACKAGE_NAME=libtiff",
@@ -20,7 +20,6 @@ cmake_configure_file(
         "SIZEOF_SIZE_T=8",
         "STRIP_SIZE_DEFAULT=8192",
         "TIFF_MAX_DIR_COUNT=1048576",
-        "USE_WIN32_FILEIO=1",
         "VAR=",
         "LIBJPEG_12_PATH=",
     ],
@@ -74,6 +73,8 @@ TIFF_PRIVATE_HEADERS = [
     "libtiff/uvcode.h",
     ":tif_config_h",
     "libtiff/tiffvers.h",
+    "libtiff/tif_hash_set.h",
+    "libtiff/tif_fax3.h",
 ]
 
 cc_library(
@@ -115,6 +116,7 @@ cc_library(
         "libtiff/tif_swab.c",
         "libtiff/tif_thunder.c",
         "libtiff/tif_tile.c",
+        "libtiff/tif_unix.c",
         "libtiff/tif_version.c",
         "libtiff/tif_warning.c",
         "libtiff/tif_webp.c",
