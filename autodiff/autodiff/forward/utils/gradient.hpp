@@ -7,7 +7,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2018-2022 Allan Leal
+// Copyright © 2018–2024 Allan Leal
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,10 +30,12 @@
 #pragma once
 
 // autodiff includes
-#include "autodiff/common/eigen.hpp"
-#include "autodiff/common/meta.hpp"
-#include "autodiff/common/classtraits.hpp"
-#include "autodiff/forward/utils/derivative.hpp"
+#ifdef AUTODIFF_EIGEN_FOUND
+#include <autodiff/common/eigen.hpp>
+#endif
+#include <autodiff/common/meta.hpp>
+#include <autodiff/common/classtraits.hpp>
+#include <autodiff/forward/utils/derivative.hpp>
 
 namespace autodiff {
 namespace detail {
@@ -103,6 +105,7 @@ void gradient(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at, Y& u
 
 }
 
+#ifdef AUTODIFF_EIGEN_FOUND
 /// Return the gradient of scalar function *f* with respect to some or all variables *x*.
 template<typename Fun, typename... Vars, typename... Args, typename Y>
 auto gradient(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at, Y& u)
@@ -122,6 +125,7 @@ auto gradient(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at)
     ReturnType<Fun, Args...> u;
     return gradient(f, wrt, at, u);
 }
+#endif
 
 /// Return the Jacobian matrix of a function *f* with respect to some or all variables.
 template<typename Fun, typename... Vars, typename... Args, typename Y, typename Jac>
@@ -142,6 +146,7 @@ void jacobian(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at, Y& F
     });
 }
 
+#ifdef AUTODIFF_EIGEN_FOUND
 /// Return the Jacobian matrix of a function *f* with respect to some or all variables.
 template<typename Fun, typename... Vars, typename... Args, typename Y>
 auto jacobian(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at, Y& F)
@@ -168,6 +173,7 @@ auto jacobian(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at)
     Y F;
     return jacobian(f, wrt, at, F);
 }
+#endif
 
 /// Return the hessian matrix of scalar function *f* with respect to some or all variables *x*.
 template<typename Fun, typename... Vars, typename... Args, typename U, typename G, typename H>
@@ -194,6 +200,7 @@ void hessian(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at, U& u,
     });
 }
 
+#ifdef AUTODIFF_EIGEN_FOUND
 /// Return the hessian matrix of scalar function *f* with respect to some or all variables *x*.
 template<typename Fun, typename... Vars, typename... Args, typename U, typename G>
 auto hessian(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at, U& u, G& g)
@@ -217,6 +224,7 @@ auto hessian(const Fun& f, const Wrt<Vars...>& wrt, const At<Args...>& at)
     Vec g;
     return hessian(f, wrt, at, u, g);
 }
+#endif
 
 } // namespace detail
 

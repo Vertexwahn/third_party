@@ -7,15 +7,14 @@ automatic differentiation. If you appreciate how it has been developed so far,
 and want to contribute, you are most welcome to join us in its development. And
 if you dislike it, please let us know how we can improve!
 
-You can contact us using our [Gitter Community Channel][gitter] or by creating
-a new [GitHub Discussion][discussion]. If you would like to report a bug, then
-please create a new [GitHub Issue][issues].
+You can contact us using [GitHub Discussion][discussion]. If you would like to
+report a bug, then please create a new [GitHub Issue][issues].
 
 ## License
 
 MIT License
 
-Copyright (c) 2018–2021 Allan Leal
+Copyright © 2018–2024 Allan Leal
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +34,5 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-[discussion]: https://github.com/autodiff/autodiff/discussions/new
-[gitter]: https://gitter.im/autodiff/community
+[discussion]: https://github.com/autodiff/autodiff/discussions/new?category=q-a
 [issues]: https://github.com/autodiff/autodiff/issues/new

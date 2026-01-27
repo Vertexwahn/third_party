@@ -1,33 +1,38 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 cc_library(
     name = "common",
     hdrs = glob(["common/*.hpp"]),
+    include_prefix = "autodiff",
     visibility = ["//visibility:public"],
-    deps = ["@eigen//:eigen"],
+    deps = ["@eigen"],
 )
 
 cc_library(
     name = "reverse",
     hdrs = glob([
-        "var.hpp",
+        #"var.hpp",
         "reverse/**/*.hpp",
     ]),
+    include_prefix = "autodiff",
     visibility = ["//visibility:public"],
     deps = [
         ":common",
-        "@eigen//:eigen",
+        "@eigen",
     ],
 )
 
 cc_library(
     name = "forward",
     hdrs = glob([
-        "dual.hpp",
-        "real.hpp",
+        #"dual.hpp",
+        #"real.hpp",
         "forward/**/*.hpp",
     ]),
+    include_prefix = "autodiff",
     visibility = ["//visibility:public"],
     deps = [
         ":common",
-        "@eigen//:eigen",
+        "@eigen",
     ],
 )

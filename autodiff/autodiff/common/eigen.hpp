@@ -7,7 +7,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2018-2022 Allan Leal
+// Copyright © 2018–2024 Allan Leal
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,16 @@
 
 #pragma once
 
+// Define AUTODIFF_EIGEN_FOUND to enable Eigen-returning overloads
+#ifndef AUTODIFF_EIGEN_FOUND
+#define AUTODIFF_EIGEN_FOUND
+#endif
+
 // Eigen includes
 #include <Eigen/Core>
 
 // autodiff includes
-#include "autodiff/common/vectortraits.hpp"
+#include <autodiff/common/vectortraits.hpp>
 
 //=====================================================================================================================
 //
@@ -99,7 +104,10 @@ struct VectorTraits<Eigen::VectorBlock<VectorType, Size>>
     using ReplaceValueType = VectorReplaceValueType<VectorType, NewValueType>;
 };
 
-#if EIGEN_VERSION_AT_LEAST(3, 3, 90)
+// Note: Eigen::internal::SingleRange changed from a non-template type to a template
+// type SingleRange<ValueAtCompileTime> in Eigen 3.4.90+. The specializations below
+// are only valid for Eigen versions 3.3.90 to 3.4.89 where SingleRange was non-template.
+#if EIGEN_VERSION_AT_LEAST(3, 3, 90) && !EIGEN_VERSION_AT_LEAST(3, 4, 90)
 
     template<typename VectorType, typename IndicesType>
     struct VectorTraits<Eigen::IndexedView<VectorType, IndicesType, Eigen::internal::SingleRange>>

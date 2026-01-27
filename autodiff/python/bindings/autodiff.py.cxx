@@ -7,7 +7,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2018-2022 Allan Leal
+// Copyright © 2018–2024 Allan Leal
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -52,6 +52,18 @@ void exportVectorXreal2nd(py::module& m);
 void exportVectorXreal3rd(py::module& m);
 void exportVectorXreal4th(py::module& m);
 
+void exportMatrixXdual0th(py::module& m);
+void exportMatrixXdual1st(py::module& m);
+void exportMatrixXdual2nd(py::module& m);
+void exportMatrixXdual3rd(py::module& m);
+void exportMatrixXdual4th(py::module& m);
+
+void exportMatrixXreal0th(py::module& m);
+void exportMatrixXreal1st(py::module& m);
+void exportMatrixXreal2nd(py::module& m);
+void exportMatrixXreal3rd(py::module& m);
+void exportMatrixXreal4th(py::module& m);
+
 void exportArrayXdual0th(py::module& m);
 void exportArrayXdual1st(py::module& m);
 void exportArrayXdual2nd(py::module& m);
@@ -95,6 +107,22 @@ PYBIND11_MODULE(autodiff4py, m)
     exportVectorXreal4th(m);
 
     m.attr("VectorXreal") = m.attr("VectorXreal1st");
+
+    exportMatrixXdual0th(m);
+    exportMatrixXdual1st(m);
+    exportMatrixXdual2nd(m);
+    exportMatrixXdual3rd(m);
+    exportMatrixXdual4th(m);
+
+    m.attr("MatrixXdual") = m.attr("MatrixXdual1st");
+
+    exportMatrixXreal0th(m);
+    exportMatrixXreal1st(m);
+    exportMatrixXreal2nd(m);
+    exportMatrixXreal3rd(m);
+    exportMatrixXreal4th(m);
+
+    m.attr("MatrixXreal") = m.attr("MatrixXreal1st");
 
     exportArrayXdual0th(m);
     exportArrayXdual1st(m);

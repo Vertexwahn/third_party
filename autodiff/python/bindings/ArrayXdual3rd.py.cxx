@@ -7,7 +7,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 //
-// Copyright (c) 2018-2022 Allan Leal
+// Copyright © 2018–2024 Allan Leal
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,8 @@
 #include "pybind11.hxx"
 
 // autodiff includes
-#include "autodiff/forward/dual/dual.hpp"
-#include "autodiff/forward/dual/eigen.hpp"
+#include <autodiff/forward/dual/dual.hpp>
+#include <autodiff/forward/dual/eigen.hpp>
 #include "eigen.hxx"
 using namespace autodiff;
 
