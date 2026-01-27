@@ -17,7 +17,7 @@
 [Disabling deprecation warnings](#disabling-deprecation-warnings)<br>
 [Overriding Catch's debug break (`-b`)](#overriding-catchs-debug-break--b)<br>
 [Static analysis support](#static-analysis-support)<br>
-[Experimental thread safety](#experimental-thread-safety)<br>
+[Thread safety in assertions (and messages)](#thread-safety-in-assertions-and-messages)<br>
 
 Catch2 is designed to "just work" as much as possible, and most of the
 configuration options below are changed automatically during compilation,
@@ -29,7 +29,7 @@ with the same name.
 ## Prefixing Catch macros
 
     CATCH_CONFIG_PREFIX_ALL       // Prefix all macros with CATCH_
-    CATCH_CONFIG_PREFIX_MESSAGES  // Prefix only INFO, UNSCOPED_INFO, WARN and CAPTURE
+    CATCH_CONFIG_PREFIX_MESSAGES  // Prefix only message macros ((UNSCOPED_)INFO, WARN, (UNSCOPED_)CAPTURE)
 
 To keep test code clean and uncluttered Catch uses short macro names (e.g. ```TEST_CASE``` and ```REQUIRE```). Occasionally these may conflict with identifiers from platform headers or the system under test. In this case the above identifier can be defined. This will cause all the Catch user macros to be prefixed with ```CATCH_``` (e.g. ```CATCH_TEST_CASE``` and ```CATCH_REQUIRE```).
 
@@ -316,17 +316,21 @@ no backwards compatibility guarantees._
 are not meant to be runnable, only "scannable".
 
 
-## Experimental thread safety
+
+<a id="experimental-thread-safety"></a>
+## Thread safety in assertions (and messages)
 
 > Introduced in Catch2 3.9.0
+
+> Made non-experimental in Catch2 3.12.0
 
 Catch2 can optionally support thread-safe assertions, that means, multiple
 user-spawned threads can use the assertion macros at the same time. Due
 to the performance cost this imposes even on single-threaded usage, Catch2
 defaults to non-thread-safe assertions.
 
-    CATCH_CONFIG_EXPERIMENTAL_THREAD_SAFE_ASSERTIONS     // enables thread safe assertions
-    CATCH_CONFIG_NO_EXPERIMENTAL_THREAD_SAFE_ASSERTIONS  // force-disables thread safe assertions
+    CATCH_CONFIG_THREAD_SAFE_ASSERTIONS     // enables thread safe assertions
+    CATCH_CONFIG_NO_THREAD_SAFE_ASSERTIONS  // force-disables thread safe assertions
 
 See [the documentation on thread safety in Catch2](thread-safety.md#top)
 for details on which macros are safe and other notes.
