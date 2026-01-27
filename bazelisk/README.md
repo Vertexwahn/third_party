@@ -122,7 +122,7 @@ require users update their bazel.
 [shell wrapper script]: https://github.com/bazelbuild/bazel/blob/master/scripts/packages/bazel.sh
 ## Other features
 
-The Go version of Bazelisk offers three new flags.
+The Go version of Bazelisk offers the following new flags and commands:
 
 ### --strict
 
@@ -160,6 +160,14 @@ bazelisk --bisect=~6.0.0..HEAD test //foo:bar_test
 ```
 
 Note that, Bazelisk uses prebuilt Bazel binaries at commits on the main and release branches, therefore you cannot bisect your local commits.
+
+### bazeliskVersion
+
+`bazeliskVersion` prints the version of Bazelisk itself.
+
+```shell
+bazelisk bazeliskVersion
+```
 
 ### Command-line completion
 
@@ -219,11 +227,15 @@ Bazelisk will try to run a Bazel wrapper from the `tools` directory if present, 
 
 Bazelisk looks for the following wrappers, in order:
 
-* `tools/bazel.<OSNAME>-<ARCH>`: An executable that's OS- and platform-specific.
-* `tools/bazel.<ARCH>`: An executable that's platform-specific (for cases where your project only supports one operating system anyway).
-* `tools/bazel`: An executable or shell script.
-* `tools/bazel.ps1`: A PowerShell script on Windows.
-* `tools/bazel.bat`: A batch file on Windows.
+* `tools/bazel.<OSNAME>-<ARCH>[.exe]`: An executable that's OS- and platform-specific
+* `tools/bazel.<ARCH>[.exe]`: An executable that's platform-specific (for cases where your project only supports one operating system anyway)
+* `tools/bazel[.exe]`: An executable or shell script
+* `tools/bazel.ps1`: A PowerShell script on Windows
+* `tools/bazel.bat`: A batch file on Windows
+
+where `.exe` extension is required on Windows.
+
+Also, on Windows `tools/bazel` is allowed with the lowest priority. It is not recommended and can cause issues, but it's supported for backward compatibility.
 
 This behavior can be disabled by setting the environment variable `BAZELISK_SKIP_WRAPPER` to any value (except the empty string) before launching Bazelisk.
 

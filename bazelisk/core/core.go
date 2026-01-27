@@ -98,8 +98,20 @@ func RunBazeliskWithArgsFuncAndConfig(argsFunc ArgsFunc, repos *Repositories, co
 
 // RunBazeliskWithArgsFuncAndConfigAndOut runs the main Bazelisk logic for the given ArgsFunc and Bazel
 // repositories and config, writing its stdout to the passed writer.
-func RunBazeliskWithArgsFuncAndConfigAndOut(argsFunc ArgsFunc, repos *Repositories, config config.Config, out io.Writer) (int, error) {
+func RunBazeliskWithArgsFuncAndConfigAndOut(argsFunc ArgsFunc, repos *Repositories, config config.Config, stdout io.Writer) (int, error) {
+	return RunBazeliskWithArgsFuncAndConfigAndOutAndErr(argsFunc, repos, config, stdout, nil)
+}
+
+// RunBazeliskWithArgsFuncAndConfigAndOutAndErr runs the main Bazelisk logic for the given ArgsFunc and Bazel
+// repositories and config, writing its stdout and stderr to the passed writers.
+func RunBazeliskWithArgsFuncAndConfigAndOutAndErr(argsFunc ArgsFunc, repos *Repositories, config config.Config, stdout, stderr io.Writer) (int, error) {
 	httputil.UserAgent = getUserAgent(config)
+
+	// bazeliskVersion command must be the only argument
+	if len(os.Args[1:]) == 1 && os.Args[1] == "bazeliskVersion" {
+		printBazeliskVersion(false)
+		return 0, nil
+	}
 
 	bazelInstallation, err := GetBazelInstallation(repos, config)
 	if err != nil {
@@ -111,7 +123,7 @@ func RunBazeliskWithArgsFuncAndConfigAndOut(argsFunc ArgsFunc, repos *Repositori
 	// --print_env must be the first argument.
 	if len(args) > 0 && args[0] == "--print_env" {
 		// print environment variables for sub-processes
-		cmd, err := makeBazelCmd(bazelInstallation.Path, args, nil, config)
+		cmd, err := makeBazelCmd(bazelInstallation.Path, args, nil, nil, config)
 		if err != nil {
 			return -1, err
 		}
@@ -160,11 +172,7 @@ func RunBazeliskWithArgsFuncAndConfigAndOut(argsFunc ArgsFunc, repos *Repositori
 	// print bazelisk version information if "version" is the first non-flag argument
 	// bazel version is executed after this command
 	if ok, gnuFormat := isVersionCommand(args); ok {
-		if gnuFormat {
-			fmt.Printf("Bazelisk %s\n", BazeliskVersion)
-		} else {
-			fmt.Printf("Bazelisk version: %s\n", BazeliskVersion)
-		}
+		printBazeliskVersion(gnuFormat)
 	}
 
 	// handle completion command
@@ -180,7 +188,7 @@ func RunBazeliskWithArgsFuncAndConfigAndOut(argsFunc ArgsFunc, repos *Repositori
 		return 0, nil
 	}
 
-	exitCode, err := runBazel(bazelInstallation.Path, args, out, config)
+	exitCode, err := runBazel(bazelInstallation.Path, args, stdout, stderr, config, isRunCommand(args))
 	if err != nil {
 		return -1, fmt.Errorf("could not run Bazel: %v", err)
 	}
@@ -203,6 +211,14 @@ func isVersionCommand(args []string) (result bool, gnuFormat bool) {
 		}
 	}
 	return
+}
+
+func printBazeliskVersion(gnuFormat bool) {
+	if gnuFormat {
+		fmt.Printf("Bazelisk %s\n", BazeliskVersion)
+	} else {
+		fmt.Printf("Bazelisk version: %s\n", BazeliskVersion)
+	}
 }
 
 // BazelInstallation provides a summary of a single install of `bazel`
@@ -626,24 +642,36 @@ func maybeDelegateToWrapperFromDir(bazel string, wd string, config config.Config
 	}
 
 	root := ws.FindWorkspaceRoot(wd)
-	exeSuffix := platforms.DetermineExecutableFilenameSuffix()
+
+	ext := platforms.DetermineExecutableFilenameSuffix()
 
 	// The list of candidate wrappers must go from most specific to least specific.
-	candidates := []string{}
-	osName, err := platforms.DetermineOperatingSystem()
-	if err == nil {
-		// We pass platforms.DarwinArm64MinVersion to disable the Darwin x86_64 fallback because this feature
-		// was added years after Apple Silicon launched and it's not worth trying to be backwards compatible.
-		arch, err := platforms.DetermineArchitecture(osName, platforms.DarwinArm64MinVersion)
-		if err == nil {
-			candidates = append(candidates, filepath.Join(root, wrapperPath+"."+runtime.GOOS+"-"+arch+exeSuffix))
-			candidates = append(candidates, filepath.Join(root, wrapperPath+"."+arch+exeSuffix))
-		}
+	var candidates []string
+
+	osName, osErr := platforms.DetermineOperatingSystem()
+	// We pass platforms.DarwinArm64MinVersion to disable the Darwin x86_64 fallback because this feature
+	// was added years after Apple Silicon launched and it's not worth trying to be backwards compatible.
+	arch, archErr := platforms.DetermineArchitecture(osName, platforms.DarwinArm64MinVersion)
+
+	if osErr == nil && archErr == nil {
+		// OS- and architecture-specific wrapper candidates.
+		candidates = append(candidates, filepath.Join(root, wrapperPath+"."+osName+"-"+arch+ext))
 	}
-	candidates = append(candidates, filepath.Join(root, wrapperPath))
+	if archErr == nil {
+		// architecture-specific wrapper candidates.
+		candidates = append(candidates, filepath.Join(root, wrapperPath+"."+arch+ext))
+	}
+	candidates = append(candidates, filepath.Join(root, wrapperPath+ext))
+
 	if runtime.GOOS == "windows" {
 		candidates = append(candidates, filepath.Join(root, wrapperPath+".ps1"))
 		candidates = append(candidates, filepath.Join(root, wrapperPath+".bat"))
+		// It's left only for backward compatibility. Executable wrapper is supposed to have ".exe" extension on Windows
+		// and been probed earlier. Script wrappers are supposed to have proper extensions and should be started
+		// differently depending on them. Script wrapper without an extension is unreliable on Windows (in the same way
+		// as starting batch wrappers without an explicit cmd.exe usage, see #731 for details), so it should be avoided.
+		// But in some cases it can work and some users may rely on it, so let it be.
+		candidates = append(candidates, filepath.Join(root, wrapperPath))
 	}
 
 	for _, wrapper := range candidates {
@@ -692,7 +720,7 @@ func prependDirToPathList(cmd *exec.Cmd, dir string) {
 	}
 }
 
-func makeBazelCmd(bazel string, args []string, out io.Writer, config config.Config) (*exec.Cmd, error) {
+func makeBazelCmd(bazel string, args []string, stdout, stderr io.Writer, config config.Config) (*exec.Cmd, error) {
 	execPath := maybeDelegateToWrapper(bazel, config)
 
 	var cmd *exec.Cmd
@@ -718,20 +746,48 @@ func makeBazelCmd(bazel string, args []string, out io.Writer, config config.Conf
 	}
 	prependDirToPathList(cmd, filepath.Dir(execPath))
 	cmd.Stdin = os.Stdin
-	if out == nil {
+	if stdout == nil {
 		cmd.Stdout = os.Stdout
 	} else {
-		cmd.Stdout = out
+		cmd.Stdout = stdout
 	}
-	cmd.Stderr = os.Stderr
+	if stderr == nil {
+		cmd.Stderr = os.Stderr
+	} else {
+		cmd.Stderr = stderr
+	}
 	return cmd, nil
 }
 
-func runBazel(bazel string, args []string, out io.Writer, config config.Config) (int, error) {
-	cmd, makeCmdErr := makeBazelCmd(bazel, args, out, config)
+func isRunCommand(args []string) bool {
+	for _, arg := range args {
+		if arg == "--" {
+			return false
+		}
+		if arg == "run" {
+			return true
+		}
+	}
+	return false
+}
+
+func runBazel(bazel string, args []string, stdout, stderr io.Writer, config config.Config, useExecOnUnix bool) (int, error) {
+	cmd, makeCmdErr := makeBazelCmd(bazel, args, stdout, stderr, config)
 	if makeCmdErr != nil {
 		return 1, makeCmdErr
 	}
+	if useExecOnUnix && runtime.GOOS != "windows" {
+		execPath := cmd.Path
+		execArgs := cmd.Args
+		execEnv := cmd.Env
+		err := syscall.Exec(execPath, execArgs, execEnv)
+		if err != nil {
+			return 1, fmt.Errorf("could not exec Bazel: %v", err)
+		}
+		// This code is unreachable if exec succeeds
+		return 0, nil
+	}
+
 	err := cmd.Start()
 	if err != nil {
 		return 1, fmt.Errorf("could not start Bazel: %v", err)
@@ -750,7 +806,6 @@ func runBazel(bazel string, args []string, out io.Writer, config config.Config) 
 	// by the terminal. As a side effect, we also suppress the printing of a
 	// Go stack trace upon receiving SIGQUIT, which is unhelpful as users tend
 	// to report it instead of the far more valuable Java thread dump.
-	// TODO(#512): We may want to treat a `bazel run` command differently.
 	// Since signal handlers are process-wide global state and bazelisk may be
 	// used as a library, reset the signal handlers after the process exits.
 	sigCh := make(chan os.Signal, 1)
@@ -761,7 +816,18 @@ func runBazel(bazel string, args []string, out io.Writer, config config.Config) 
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			waitStatus := exitError.Sys().(syscall.WaitStatus)
-			return waitStatus.ExitStatus(), nil
+			// it's only correct to use waitStatus.ExitStatus when the process terminated normally, i.e. waitStatus.Exited() == true
+			if waitStatus.Exited() {
+				return waitStatus.ExitStatus(), nil
+			}
+			// if the process was terminated by a signal on a POSIX-compatible system, let's report its exit code in the same way
+			// as shells do - as 128 + signal number.
+			// It's not a perfect solution, because information that a signal has terminated the process is lost,
+			// but at least we propagate a proper exit code.
+			if runtime.GOOS != "windows" && waitStatus.Signaled() {
+				return 128 + int(waitStatus.Signal()), nil
+			}
+			return 1, fmt.Errorf("unexpected wait status of Bazel: %v", waitStatus)
 		}
 		return 1, fmt.Errorf("could not launch Bazel: %v", err)
 	}
@@ -776,7 +842,7 @@ func getIncompatibleFlags(bazelPath, cmd string, config config.Config) ([]string
 	}
 
 	out := strings.Builder{}
-	if _, err := runBazel(bazelPath, []string{"help", cmd, "--short"}, &out, config); err != nil {
+	if _, err := runBazel(bazelPath, []string{"help", cmd, "--short"}, &out, nil, config, false); err != nil {
 		return nil, fmt.Errorf("unable to determine incompatible flags with binary %s: %v", bazelPath, err)
 	}
 
@@ -852,7 +918,7 @@ func shutdownIfNeeded(bazelPath string, startupOptions []string, config config.C
 
 	args := append(startupOptions, "shutdown")
 	fmt.Printf("bazel %s\n", strings.Join(args, " "))
-	exitCode, err := runBazel(bazelPath, args, nil, config)
+	exitCode, err := runBazel(bazelPath, args, nil, nil, config, false)
 	fmt.Printf("\n")
 	if err != nil {
 		log.Fatalf("failed to run bazel shutdown: %v", err)
@@ -871,7 +937,7 @@ func cleanIfNeeded(bazelPath string, startupOptions []string, config config.Conf
 
 	args := append(startupOptions, "clean", "--expunge")
 	fmt.Printf("bazel %s\n", strings.Join(args, " "))
-	exitCode, err := runBazel(bazelPath, args, nil, config)
+	exitCode, err := runBazel(bazelPath, args, nil, nil, config, false)
 	fmt.Printf("\n")
 	if err != nil {
 		log.Fatalf("failed to run clean: %v", err)
@@ -1070,7 +1136,7 @@ func testWithBazelAtCommit(bazelCommit string, args []string, bazeliskHome strin
 	shutdownIfNeeded(bazelPath, startupOptions, config)
 	cleanIfNeeded(bazelPath, startupOptions, config)
 	fmt.Printf("bazel %s\n", strings.Join(args, " "))
-	bazelExitCode, err := runBazel(bazelPath, args, nil, config)
+	bazelExitCode, err := runBazel(bazelPath, args, nil, nil, config, false)
 	if err != nil {
 		return -1, fmt.Errorf("could not run Bazel: %v", err)
 	}
@@ -1087,7 +1153,7 @@ func migrate(bazelPath string, baseArgs []string, flags []string, config config.
 	shutdownIfNeeded(bazelPath, startupOptions, config)
 	cleanIfNeeded(bazelPath, startupOptions, config)
 	fmt.Printf("bazel %s\n", strings.Join(args, " "))
-	exitCode, err := runBazel(bazelPath, args, nil, config)
+	exitCode, err := runBazel(bazelPath, args, nil, nil, config, false)
 	if err != nil {
 		log.Fatalf("could not run Bazel: %v", err)
 	}
@@ -1102,7 +1168,7 @@ func migrate(bazelPath string, baseArgs []string, flags []string, config config.
 	shutdownIfNeeded(bazelPath, startupOptions, config)
 	cleanIfNeeded(bazelPath, startupOptions, config)
 	fmt.Printf("bazel %s\n", strings.Join(args, " "))
-	exitCode, err = runBazel(bazelPath, args, nil, config)
+	exitCode, err = runBazel(bazelPath, args, nil, nil, config, false)
 	if err != nil {
 		log.Fatalf("could not run Bazel: %v", err)
 	}
@@ -1120,7 +1186,7 @@ func migrate(bazelPath string, baseArgs []string, flags []string, config config.
 		shutdownIfNeeded(bazelPath, startupOptions, config)
 		cleanIfNeeded(bazelPath, startupOptions, config)
 		fmt.Printf("bazel %s\n", strings.Join(args, " "))
-		exitCode, err = runBazel(bazelPath, args, nil, config)
+		exitCode, err = runBazel(bazelPath, args, nil, nil, config, false)
 		if err != nil {
 			log.Fatalf("could not run Bazel: %v", err)
 		}

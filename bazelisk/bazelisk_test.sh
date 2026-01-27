@@ -44,6 +44,14 @@ shift 1
 function setup() {
   unset USE_BAZEL_VERSION
 
+  case "$(uname -s)" in
+    MSYS*)
+      export PATH="/usr/bin:$PATH"
+      ;;
+    *)
+      ;;
+  esac
+
   USER_HOME="$(mktemp -d $TEST_TMPDIR/user.XXXXXX)"
   BAZELISK_HOME="$(mktemp -d $TEST_TMPDIR/home.XXXXXX)"
 
@@ -331,7 +339,7 @@ EOF
 function test_path_is_consistent_regardless_of_base_url() {
   setup
 
-  echo 8.4.2 > .bazelversion
+  echo 8.5.1 > .bazelversion
 
   cat >MODULE.bazel <<EOF
 print_path = use_repo_rule("//:print_path.bzl", "print_path")
