@@ -156,6 +156,12 @@
 #  define FMT_CONSTEXPR_STRING
 #endif
 
+#if FMT_MSC_VERSION
+#  define FMT_MSC_WARNING(...) __pragma(warning(__VA_ARGS__))
+#else
+#  define FMT_MSC_WARNING(...)
+#endif
+
 // GCC 4.9 doesn't support qualified names in specializations.
 namespace std {
 template <typename T> struct iterator_traits<fmt::basic_appender<T>> {
@@ -197,6 +203,23 @@ struct is_contiguous<std::basic_string<Char, Traits, Allocator>>
     : std::true_type {};
 
 namespace detail {
+
+#ifdef FMT_USE_BITINT
+// Use the provided definition.
+#elif FMT_CLANG_VERSION >= 1500 && !defined(__CUDACC__)
+#  define FMT_USE_BITINT 1
+#else
+#  define FMT_USE_BITINT 0
+#endif
+
+#if FMT_USE_BITINT
+FMT_PRAGMA_CLANG(diagnostic ignored "-Wbit-int-extension")
+template <int N> using bitint = _BitInt(N);
+template <int N> using ubitint = unsigned _BitInt(N);
+#else
+template <int N> struct bitint {};
+template <int N> struct ubitint {};
+#endif  // FMT_USE_BITINT
 
 // __builtin_clz is broken in clang with Microsoft codegen:
 // https://github.com/fmtlib/fmt/issues/519.
@@ -394,11 +417,11 @@ class uint128_fallback {
       return *this;
     }
 #if FMT_HAS_BUILTIN(__builtin_addcll) && !defined(__ibmxl__)
-    unsigned long long carry;
+    ullong carry;
     lo_ = __builtin_addcll(lo_, n, 0, &carry);
     hi_ += carry;
 #elif FMT_HAS_BUILTIN(__builtin_ia32_addcarryx_u64) && !defined(__ibmxl__)
-    unsigned long long result;
+    ullong result;
     auto carry = __builtin_ia32_addcarryx_u64(0, lo_, n, &result);
     lo_ = result;
     hi_ += carry;
@@ -443,7 +466,7 @@ inline auto bit_cast(const From& from) -> To {
     unsigned short value[static_cast<unsigned>(size)];
   } data = bit_cast<data_t>(from);
   auto result = To();
-  if (const_check(is_big_endian())) {
+  if (is_big_endian()) {
     for (int i = 0; i < size; ++i)
       result = (result << num_bits<unsigned short>()) | data.value[i];
   } else {
@@ -565,6 +588,65 @@ FMT_CONSTEXPR20 auto fill_n(T* out, Size count, char value) -> T* {
                 "sizeof(T) must be 1 to use char for initialization");
   memset(out, value, to_unsigned(count));
   return out + count;
+}
+
+template <typename OutputIt, typename InputIt, typename = void>
+struct has_back_insert_iterator_container_append : std::false_type {};
+
+template <typename OutputIt, typename InputIt>
+struct has_back_insert_iterator_container_append<
+    OutputIt, InputIt,
+    void_t<decltype(get_container(std::declval<OutputIt>())
+                        .append(std::declval<InputIt>(),
+                                std::declval<InputIt>()))>> : std::true_type {};
+
+template <typename OutputIt, typename InputIt, typename = void>
+struct has_back_insert_iterator_container_insert_at_end : std::false_type {};
+
+template <typename OutputIt, typename InputIt>
+struct has_back_insert_iterator_container_insert_at_end<
+    OutputIt, InputIt,
+    void_t<decltype(get_container(std::declval<OutputIt>())
+                        .insert(get_container(std::declval<OutputIt>()).end(),
+                                std::declval<InputIt>(),
+                                std::declval<InputIt>()))>> : std::true_type {};
+
+// An optimized version of std::copy with the output value type (T).
+template <typename T, typename InputIt, typename OutputIt,
+          FMT_ENABLE_IF(is_back_insert_iterator<OutputIt>::value&&
+                            has_back_insert_iterator_container_append<
+                                OutputIt, InputIt>::value)>
+FMT_CONSTEXPR auto copy(InputIt begin, InputIt end, OutputIt out) -> OutputIt {
+  get_container(out).append(begin, end);
+  return out;
+}
+
+template <typename T, typename InputIt, typename OutputIt,
+          FMT_ENABLE_IF(is_back_insert_iterator<OutputIt>::value &&
+                        !has_back_insert_iterator_container_append<
+                            OutputIt, InputIt>::value &&
+                        has_back_insert_iterator_container_insert_at_end<
+                            OutputIt, InputIt>::value)>
+FMT_CONSTEXPR auto copy(InputIt begin, InputIt end, OutputIt out) -> OutputIt {
+  auto& c = get_container(out);
+  c.insert(c.end(), begin, end);
+  return out;
+}
+
+template <typename T, typename InputIt, typename OutputIt,
+          FMT_ENABLE_IF(!(is_back_insert_iterator<OutputIt>::value &&
+                          (has_back_insert_iterator_container_append<
+                               OutputIt, InputIt>::value ||
+                           has_back_insert_iterator_container_insert_at_end<
+                               OutputIt, InputIt>::value)))>
+FMT_CONSTEXPR auto copy(InputIt begin, InputIt end, OutputIt out) -> OutputIt {
+  while (begin != end) *out++ = static_cast<T>(*begin++);
+  return out;
+}
+
+template <typename T, typename V, typename OutputIt>
+FMT_CONSTEXPR auto copy(basic_string_view<V> s, OutputIt out) -> OutputIt {
+  return copy<T>(s.begin(), s.end(), out);
 }
 
 template <typename OutChar, typename InputIt, typename OutputIt>
@@ -979,7 +1061,7 @@ FMT_API void print(FILE*, string_view);
 
 namespace detail {
 template <typename Char, size_t N> struct fixed_string {
-  FMT_CONSTEXPR20 fixed_string(const Char (&s)[N]) {
+  FMT_CONSTEXPR fixed_string(const Char (&s)[N]) {
     detail::copy<Char, const Char*, Char*>(static_cast<const Char*>(s), s + N,
                                            data);
   }
@@ -1490,26 +1572,26 @@ template <typename T, typename Enable = void> struct float_info;
 
 template <> struct float_info<float> {
   using carrier_uint = uint32_t;
-  static const int exponent_bits = 8;
-  static const int kappa = 1;
-  static const int big_divisor = 100;
-  static const int small_divisor = 10;
-  static const int min_k = -31;
-  static const int max_k = 46;
-  static const int shorter_interval_tie_lower_threshold = -35;
-  static const int shorter_interval_tie_upper_threshold = -35;
+  static constexpr int exponent_bits = 8;
+  static constexpr int kappa = 1;
+  static constexpr int big_divisor = 100;
+  static constexpr int small_divisor = 10;
+  static constexpr int min_k = -31;
+  enum { max_k = 46 };
+  static constexpr int shorter_interval_tie_lower_threshold = -35;
+  static constexpr int shorter_interval_tie_upper_threshold = -35;
 };
 
 template <> struct float_info<double> {
   using carrier_uint = uint64_t;
-  static const int exponent_bits = 11;
-  static const int kappa = 2;
-  static const int big_divisor = 1000;
-  static const int small_divisor = 100;
-  static const int min_k = -292;
-  static const int max_k = 341;
-  static const int shorter_interval_tie_lower_threshold = -77;
-  static const int shorter_interval_tie_upper_threshold = -77;
+  static constexpr int exponent_bits = 11;
+  static constexpr int kappa = 2;
+  static constexpr int big_divisor = 1000;
+  static constexpr int small_divisor = 100;
+  static constexpr int min_k = -292;
+  enum { max_k = 341 };
+  static constexpr int shorter_interval_tie_lower_threshold = -77;
+  static constexpr int shorter_interval_tie_upper_threshold = -77;
 };
 
 // An 80- or 128-bit floating point number.
@@ -1645,7 +1727,7 @@ template <typename F> struct basic_fp {
   }
 };
 
-using fp = basic_fp<unsigned long long>;
+using fp = basic_fp<ullong>;
 
 // Normalizes the value converted from double and multiplied by (1 << SHIFT).
 template <int SHIFT = 0, typename F>
@@ -1776,7 +1858,7 @@ FMT_API auto is_printable(uint32_t cp) -> bool;
 
 inline auto needs_escape(uint32_t cp) -> bool {
   if (cp < 0x20 || cp == 0x7f || cp == '"' || cp == '\\') return true;
-  if (const_check(FMT_OPTIMIZE_SIZE > 1)) return false;
+  if FMT_CONSTEXPR20 (FMT_OPTIMIZE_SIZE > 1) return false;
   return !is_printable(cp);
 }
 
@@ -1791,7 +1873,7 @@ auto find_escape(const Char* begin, const Char* end)
     -> find_escape_result<Char> {
   for (; begin != end; ++begin) {
     uint32_t cp = static_cast<unsigned_char<Char>>(*begin);
-    if (const_check(sizeof(Char) == 1) && cp >= 0x80) continue;
+    if (sizeof(Char) == 1 && cp >= 0x80) continue;
     if (needs_escape(cp)) return {begin, begin + 1, cp};
   }
   return {begin, nullptr, 0};
@@ -1799,7 +1881,7 @@ auto find_escape(const Char* begin, const Char* end)
 
 inline auto find_escape(const char* begin, const char* end)
     -> find_escape_result<char> {
-  if (const_check(!use_utf8)) return find_escape<char>(begin, end);
+  if FMT_CONSTEXPR20 (!use_utf8) return find_escape<char>(begin, end);
   auto result = find_escape_result<char>{end, nullptr, 0};
   for_each_codepoint(string_view(begin, to_unsigned(end - begin)),
                      [&](uint32_t cp, string_view sv) {
@@ -2372,9 +2454,8 @@ FMT_CONSTEXPR auto parse_align(const Char* begin, const Char* end,
         ++begin;
       }
       break;
-    } else if (p == begin) {
-      break;
     }
+    if (p == begin) break;
     p = begin;
   }
   specs.set_align(alignment);
@@ -3734,12 +3815,12 @@ template <typename Char> struct arg_formatter {
 
 struct dynamic_spec_getter {
   template <typename T, FMT_ENABLE_IF(is_integer<T>::value)>
-  FMT_CONSTEXPR auto operator()(T value) -> unsigned long long {
-    return is_negative(value) ? ~0ull : static_cast<unsigned long long>(value);
+  FMT_CONSTEXPR auto operator()(T value) -> ullong {
+    return is_negative(value) ? ~0ull : static_cast<ullong>(value);
   }
 
   template <typename T, FMT_ENABLE_IF(!is_integer<T>::value)>
-  FMT_CONSTEXPR auto operator()(T) -> unsigned long long {
+  FMT_CONSTEXPR auto operator()(T) -> ullong {
     report_error("width/precision is not integer");
     return 0;
   }
@@ -3753,7 +3834,7 @@ FMT_CONSTEXPR void handle_dynamic_spec(
   auto arg =
       kind == arg_id_kind::index ? ctx.arg(ref.index) : ctx.arg(ref.name);
   if (!arg) report_error("argument not found");
-  unsigned long long result = arg.visit(dynamic_spec_getter());
+  ullong result = arg.visit(dynamic_spec_getter());
   if (result > to_unsigned(max_value<int>()))
     report_error("width/precision is out of range");
   value = static_cast<int>(result);
@@ -3981,10 +4062,28 @@ class formatter<std::basic_string<Char, Traits, Allocator>, Char>
     : public formatter<basic_string_view<Char>, Char> {};
 
 template <int N, typename Char>
-struct formatter<detail::bitint<N>, Char> : formatter<long long, Char> {};
+struct formatter<detail::bitint<N>, Char> : formatter<long long, Char> {
+  static_assert(N <= 64, "unsupported _BitInt");
+  static auto format_as(detail::bitint<N> x) -> long long {
+    return static_cast<long long>(x);
+  }
+  template <typename Context>
+  auto format(detail::bitint<N> x, Context& ctx) const -> decltype(ctx.out()) {
+    return formatter<long long, Char>::format(format_as(x), ctx);
+  }
+};
+
 template <int N, typename Char>
-struct formatter<detail::ubitint<N>, Char>
-    : formatter<unsigned long long, Char> {};
+struct formatter<detail::ubitint<N>, Char> : formatter<ullong, Char> {
+  static_assert(N <= 64, "unsupported _BitInt");
+  static auto format_as(detail::ubitint<N> x) -> ullong {
+    return static_cast<ullong>(x);
+  }
+  template <typename Context>
+  auto format(detail::ubitint<N> x, Context& ctx) const -> decltype(ctx.out()) {
+    return formatter<ullong, Char>::format(format_as(x), ctx);
+  }
+};
 
 template <typename Char>
 struct formatter<detail::float128, Char>
@@ -4211,7 +4310,7 @@ class format_int {
  private:
   // Buffer should be large enough to hold all digits (digits10 + 1),
   // a sign and a null character.
-  enum { buffer_size = std::numeric_limits<unsigned long long>::digits10 + 3 };
+  enum { buffer_size = std::numeric_limits<ullong>::digits10 + 3 };
   mutable char buffer_[buffer_size];
   char* str_;
 
@@ -4241,7 +4340,7 @@ class format_int {
       : str_(format_unsigned(value)) {}
   FMT_CONSTEXPR20 explicit format_int(unsigned long value)
       : str_(format_unsigned(value)) {}
-  FMT_CONSTEXPR20 explicit format_int(unsigned long long value)
+  FMT_CONSTEXPR20 explicit format_int(ullong value)
       : str_(format_unsigned(value)) {}
 
   /// Returns the number of characters written to the output buffer.
