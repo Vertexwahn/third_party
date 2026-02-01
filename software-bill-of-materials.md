@@ -1,0 +1,78 @@
+# Software bill of materials (SBOM)
+
+In this folder (`third_party`) you can find different libraries.
+Usually, those libraries are just copied into the project and used as is.
+This file documents the commit hash of each library if it is not given in the filename of the directory of the third party dependency itself.
+
+# BEGIN-OKAPI-RELATED
+
+# Okapi dependencies
+
+Okapi has all dependencies of [Flatland](https://github.com/Vertexwahn/FlatlandRT) as well as the following:
+
+```text
+benchmark-4ed29ae27492e63acd2500a3b7b76bcfefc44f10
+depend_on_what_you_use-cfbc67ce31392ef55facc2353f24487e5de378b2
+json-553c314fb873451565e963385d80c4748bc43576
+oneTBB-bad4c42be4623b12ac9ff72138e98775555f9153
+rules_cuda-458eccfbe2e8a241638fac77b3c0dc768211d437
+tinyobjloader-d56555b026c1c7cec0f93f3ec7f1de2ff005c5ad
+yaml-cpp-89ff142b991af432b5d7a7cee55282f082a7e629
+```
+
+# END-OKAPI-RELATED
+
+# Flatland dependencies
+
+```text
+abseil-cpp-0e5031d3c00d8a482cd5705b5d006518447f39da
+bazel_clang_tidy-c4d35e0d0b838309358e57a2efed831780f85cd0
+bazel-skylib-ea054fcaf08c3b014e34212451d8cb45f01d8331
+bazel-toolchain-795d76fd03e0b17c0961f0981a8512a00cba4fa2
+boringssl-fcf70a1a66f4cd000ab9acefb91e3b380fe0984b
+Catch2-de7e8630134f46e67a6b59269436f9cab94cd28e
+cpuinfo-84818a41e074779dbb00521a4731d3e14160ff15
+fmt-e55a02b39a6f51c8f79b6a0a6e1d1eba0e93fba4
+gflags-03a4842c9c6aaef438d7bf0c84e8a62c8064992b
+glog-570c7e4e1dd197e9ae2777152b87a5ea9e06bcac
+googletest-56efe3983185e3f37e43415d1afa97e3860f187f
+hypothesis-3acfea6c14078203802b417b61ad161111106fe4
+Imath-4de9a1dabdf517a7df9bc350b7395bc8db2f681d
+openexr-74a0f59390eaa4a50c6853ad9fd9c4b1073f805c
+pbrt-v4-f140d7cba5dc7b941f9346d6b7d1476a05c28c37
+pcg-cpp-428802d1a5634f96bcd0705fab379ff0113bcf13
+pugixml-710052066cc0a7210d7f554196ae43bd1cd9da3e
+rules_cc-6f0ade9d4d0cef4c41e48b115f719f65dd851026
+spdlog-472945ba489e3f5684761affc431ae532ab5ed8c
+xtensor-47886141576e34f0354a8481151b9f359f4b8c80
+xtl-f3ca44e9102d574e9592c6917ae09da2bacf9aae
+```
+
+# BEGIN-INTERNAL
+
+# Other dependencies
+
+```text
+autodiff-
+bazel-b0a4feff5b2a61262e94305452ac53369fe35e75
+bazel-central-registry-6e9e6f1027de654a6b3e3dfb0fae17eac71d0bea
+bazel-diff-cf66975727b3f5c130edde4664d7115179b2e8cf
+bazel-latex-c552d5bd09e4e9e49040ede60dd97720acb1cbb7
+bazelisk-0a82ffe6789339709b28bce46e1932af214d20dd
+copybara-d80252a6e22e3347010047a396b5d9df3b9112c5
+emsdk-85390ce88465e18c1c5d2f8d7f6ed21f3e8e8678
+figure-gen-1f3e11b3723d62ff4f7c4fef9f96f945f69b2724
+hello-webgpu-e05010874f2fe7935a5c7be3e39c57f79a3f83f1
+LuisaCompute-d0d498575b2b629c55bb78efbb2660372687a0a4
+mitsuba3-12fe498cb0730ad49474e2264d3d2246939d17a3
+rules_7zip-03a10b5796eac0aed122cf52064ed15785610857
+rules_doxygen-ffe17b08d2890ae2b0a28318d6a02975be1b1368
+rules_go-cdad78d05f1f94a837394b11f1d352989ba1c164
+rules_k8s-554dc69933461ae2fa4fefcc46d09d5784832e6c
+rules_python-bb75fc1dd955dce28fe6be8b95feeac5e3318495
+rules_spring-d774f923d79f32d846458d91bd8eae222d1840dd
+rules_vulkan-9490b82e49c880d868417b95c191c7c26fa4d155
+webdriverxx-5dc297a11f2333d5f7af7fdedf9992e0ac28beef
+```
+
+# END-INTERNAL

@@ -1,0 +1,36 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("//:defs.bzl", "sonarqube_coverage_generator_binary")
+
+bzl_library(
+    name = "bzl",
+    srcs = ["defs.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_skylib//lib:versions",
+        "@bazel_version",
+    ],
+)
+
+exports_files([
+    "defs.bzl",
+    "sonar-project.properties.tpl",
+])
+
+sonarqube_coverage_generator_binary()
+
+# This re-exports the java_binary, to ensure it gets built with runfiles for the host configuration
+genrule(
+    name = "sonarqube_coverage_generator",
+    outs = ["coverage.launcher"],
+    cmd = "ln -snf $$(readlink $(location :SonarQubeCoverageGenerator)) $@",
+    executable = 1,
+    tags = ["no-cache"],  # successful execution even when --remote_cache is involved
+    tools = [":SonarQubeCoverageGenerator"],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "sonar_scanner",
+    actual = "@org_sonarsource_scanner_cli_sonar_scanner_cli//:sonar_scanner",
+    visibility = ["//visibility:public"],
+)

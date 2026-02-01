@@ -1,0 +1,5 @@
+bazel_dep(name = "glm", version = "1.0.1")
+local_path_override(
+    module_name = "glm",
+    path = "..",
+)

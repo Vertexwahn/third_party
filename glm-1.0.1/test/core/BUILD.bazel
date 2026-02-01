@@ -1,0 +1,131 @@
+cc_test(
+    name = "core_cpp_constexpr",
+    srcs = ["core_cpp_constexpr.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_cpp_defaulted_ctor",
+    srcs = ["core_cpp_defaulted_ctor.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_aligned_gentypes",
+    srcs = ["core_force_aligned_gentypes.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_ctor_init",
+    srcs = ["core_force_ctor_init.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_arch_unknown",
+    srcs = ["core_force_arch_unknown.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_compiler_unknown",
+    srcs = ["core_force_compiler_unknown.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_explicit_ctor",
+    srcs = ["core_force_explicit_ctor.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_inline",
+    srcs = ["core_force_inline.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_platform_unknown",
+    srcs = ["core_force_platform_unknown.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_pure",
+    srcs = ["core_force_pure.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_unrestricted_gentype",
+    srcs = ["core_force_unrestricted_gentype.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_xyzw_only",
+    srcs = ["core_force_xyzw_only.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_force_quat_wxyz",
+    srcs = ["core_force_quat_wxyz.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_aligned",
+    srcs = ["core_type_aligned.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_cast",
+    srcs = ["core_type_cast.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_ctor",
+    srcs = ["core_type_ctor.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_int",
+    srcs = ["core_type_int.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_length",
+    srcs = ["core_type_length.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_mat2x2",
+    srcs = ["core_type_mat2x2.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_mat2x3",
+    srcs = ["core_type_mat2x3.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_mat2x4",
+    srcs = ["core_type_mat2x4.cpp"],
+    deps = ["@glm"],
+)
+
+cc_test(
+    name = "core_type_mat3x2",
+    srcs = ["core_type_mat3x2.cpp"],
+    deps = ["@glm"],
+)
